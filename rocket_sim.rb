@@ -12,7 +12,7 @@ thrust_lines = thrust_file.each_line.reject{|line| line[0]==';' }[1..-1]
 raw_thrust = thrust_lines.map{|line| line.chomp.split('   ')[1..2].map(&:to_f)}
 
 # Raw thrust values plus interpolation
-thrust = Interpolator::Table.new raw_thrust.flatten.each_slice(2).map(&:first), raw_thrust.flatten.each_slice(2).map(&:last)
+thrust = Interpolator::Table.new raw_thrust.map(&:first), raw_thrust.map(&:last)
 thrust.extrapolate = false
 
 gravity = Vector[0, -9.8]
