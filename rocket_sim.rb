@@ -32,6 +32,7 @@ until sim_complete
 
   forces += (gravity * mass)
   forces += (thrust.interpolate(time) * Vector[Math::sin(rotation), Math::cos(rotation)])
+  forces += ((0.0008*(velocity.r**2)) * Vector[-Math::sin(rotation), -Math::cos(rotation)]) #crappy drag model
 
   velocity += ((forces / mass) * step_size)
   position += (velocity * step_size)
