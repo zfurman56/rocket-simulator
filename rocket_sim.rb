@@ -1,9 +1,11 @@
+require 'matrix'
+
 sim_complete = false
 
 def get_rocket_commands
 end
 
-position = [0, 0] # x, y
+position = Vector[0, 0] #meters
 rotation = 0 #degrees
 
 step_size = 0.01 #seconds
