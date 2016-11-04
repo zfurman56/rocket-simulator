@@ -1,15 +1,19 @@
 require 'matrix'
 require 'interpolator'
+require 'distribution'
 
 sim_complete = false
 
 def get_rocket_commands
 end
 
+standard_deviation = 0.98 #percent
+thrust_coefficient = (Distribution::Normal.rng(100, standard_deviation).call / 100)
+
 # Supply .eng thrust file via command args
 thrust_file = File.open(ARGV[0], 'r')
 thrust_lines = thrust_file.each_line.reject{|line| line[0]==';' }[1..-1]
-raw_thrust = thrust_lines.map{|line| line.chomp.split('   ')[1..2].map(&:to_f)}
+raw_thrust = thrust_lines.map{|line| line.chomp.split('   ')[1..2].map{|n|n.to_f*thrust_coefficient}}
 
 # Raw thrust values plus interpolation
 thrust = Interpolator::Table.new raw_thrust.map(&:first), raw_thrust.map(&:last)
