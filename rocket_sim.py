@@ -1,6 +1,7 @@
 import sys
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
 def get_rocket_commands():
     pass
@@ -26,6 +27,10 @@ velocity = np.array([0., 0.]) #meters/second
 step_size = 0.01 #seconds
 time = 0. #seconds
 
+# Used for data plotting
+altitude_values = []
+time_values = []
+
 while True:
 
     forces = np.array([0., 0.])
@@ -40,9 +45,14 @@ while True:
     position += (velocity * step_size)
 
     print str(position[1]) + ' ' + str(time)
+    altitude_values.append(position[1])
+    time_values.append(time)
 
     if position[1] < 0:
         break
 
     time += step_size
 
+plt.plot(time_values, altitude_values)
+plt.ylabel('Rocket altitude vs time')
+plt.show()
