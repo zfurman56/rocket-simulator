@@ -53,6 +53,8 @@ while True:
 
     time += step_size
 
+print "Peak altitude: " + str(max(altitude_values))
+
 plt.plot(time_values, altitude_values)
 plt.ylabel('Rocket altitude vs time')
 plt.show()
