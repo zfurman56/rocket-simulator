@@ -21,6 +21,6 @@ Rocket simulator created by the MA team for TARC 2017
 
 ## How to get started
 * Clone the repo
-* Install numpy dependency
+* Install [NumPy](https://docs.scipy.org/doc/numpy-1.10.1/user/install.html) dependency
 * Run the program with `python rocket_sim.py <thrust curve file>`
   * An example thrust curve, `AeroTech_F39.eng`, is included
