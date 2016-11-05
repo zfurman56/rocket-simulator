@@ -21,6 +21,6 @@ Rocket simulator created by the MA team for TARC 2017
 
 ## How to get started
 * Clone the repo
-* Download the required gems: `interpolator` and `distribution`
-* Run the program with `ruby rocket_sim.rb <thrust curve file>`
+* Install numpy dependency
+* Run the program with `python rocket_sim.py <thrust curve file>`
   * An example thrust curve, `AeroTech_F39.eng`, is included
