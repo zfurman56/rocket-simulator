@@ -14,8 +14,11 @@ thrust_file = open(sys.argv[1], 'r')
 thrust_lines = filter(lambda line: line[0]!=';', thrust_file.readlines())[1:-1]
 raw_thrust = map(lambda line: map(lambda x: float(x)*thrust_coefficient, line.split('   ')[1:3]), thrust_lines)
 
+raw_times = [item[0] for item in raw_thrust]
+raw_thrusts = [item[1] for item in raw_thrust]
+
 # Raw thrust values plus interpolation
-thrust = lambda x: np.interp(x, [item[0] for item in raw_thrust], [item[1] for item in raw_thrust], right=0)
+thrust = lambda x: np.interp(x, raw_times, raw_thrusts, right=0)
 
 gravity = np.array([0, -9.8])
 
@@ -39,7 +42,7 @@ while True:
 
     forces += (gravity * mass)
     forces += (thrust(time) * np.array([math.sin(rotation), math.cos(rotation)]))
-    forces += ((0.0008*np.linalg.norm(velocity)) * -velocity) #crappy drag model
+    forces += (0.0008 * -(velocity**2)) #crappy drag model
 
     velocity += ((forces / mass) * step_size)
     position += (velocity * step_size)
