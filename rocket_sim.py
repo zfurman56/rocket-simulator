@@ -7,12 +7,12 @@ def get_rocket_commands():
     pass
 
 standard_deviation = 0.98 #percent
-thrust_coefficient = (np.random.normal(100, standard_deviation) / 100)
+thrust_scale = (np.random.normal(100, standard_deviation) / 100)
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
 thrust_lines = filter(lambda line: line[0]!=';', thrust_file.readlines())[1:-1]
-raw_thrust = map(lambda line: map(lambda x: float(x)*thrust_coefficient, line.split('   ')[1:3]), thrust_lines)
+raw_thrust = map(lambda line: map(lambda x: float(x)*thrust_scale, line.split('   ')[1:3]), thrust_lines)
 
 raw_times = [item[0] for item in raw_thrust]
 raw_thrusts = [item[1] for item in raw_thrust]
@@ -30,6 +30,18 @@ velocity = np.array([0., 0.]) #meters/second
 step_size = 0.01 #seconds
 time = 0. #seconds
 
+def sim_step(time, position, velocity, rotation):
+    forces = (gravity * mass)
+    forces += (thrust(time) * np.array([math.sin(rotation), math.cos(rotation)]))
+    forces += (0.0008 * -(velocity**2)) #crappy drag model
+
+    velocity += ((forces / mass) * step_size)
+    position += (velocity * step_size)
+
+    time += step_size
+
+    return (time, position, velocity, rotation)
+
 # Used for data plotting
 altitude_values = []
 time_values = []
@@ -40,12 +52,7 @@ while True:
 
     rocket_commands = get_rocket_commands
 
-    forces += (gravity * mass)
-    forces += (thrust(time) * np.array([math.sin(rotation), math.cos(rotation)]))
-    forces += (0.0008 * -(velocity**2)) #crappy drag model
-
-    velocity += ((forces / mass) * step_size)
-    position += (velocity * step_size)
+    new_time, position, velocity, rotation = sim_step(time, position, velocity, rotation)
 
     print str(position[1]) + ' ' + str(time)
     altitude_values.append(position[1])
@@ -54,7 +61,7 @@ while True:
     if position[1] < 0:
         break
 
-    time += step_size
+    time = new_time
 
 print "Peak altitude: " + str(max(altitude_values))
 
