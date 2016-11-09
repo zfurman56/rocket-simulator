@@ -3,11 +3,16 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_rocket_commands():
-    pass
+def get_rocket_commands(position, velocity):
+    if velocity[1]*-0.372 < position[1]-242.2:
+        return True
+    else:
+        return False
 
-standard_deviation = 0.98 #percent
-thrust_scale = (np.random.normal(100, standard_deviation) / 100)
+baro_std = 0.3
+drag_factor = 0.0008
+drag_gain = 100
+thrust_scale = 1.02
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
@@ -26,14 +31,29 @@ mass = 0.595 #kilograms
 position = np.array([0., 0.]) #meters
 rotation = 0. #radians
 velocity = np.array([0., 0.]) #meters/second
+est_position = np.array([0., 0.])
 
 step_size = 0.01 #seconds
 time = 0. #seconds
 
-def sim_step(time, position, velocity, rotation):
+# Used for delay
+rocket_commands = [False] * 10
+
+# Models barometric sensor inaccuracy
+def sensor_model(position, previous_est_position):
+    est_position = np.array([0., np.random.normal(position[1], baro_std)])
+    est_velocity = (position - previous_est_position) / step_size
+    return est_position, est_velocity
+
+# Generates a coeffecient to be multiplied with velocity squared
+def drag_coeffecient(chute_deployed):
+    return drag_factor * (1 + drag_gain) if chute_deployed else drag_factor
+
+# Computes one simulated time step
+def sim_step(time, position, velocity, rotation, chute_deployed):
     forces = (gravity * mass)
     forces += (thrust(time) * np.array([math.sin(rotation), math.cos(rotation)]))
-    forces += (0.0008 * -(velocity**2)) #crappy drag model
+    forces += drag_coeffecient(chute_deployed) * -(velocity*np.abs(velocity))
 
     velocity += ((forces / mass) * step_size)
     position += (velocity * step_size)
@@ -48,11 +68,14 @@ time_values = []
 
 while True:
 
+    previous_est_position = np.copy(est_position)
+    est_position, est_velocity = sensor_model(position, previous_est_position)
+
     forces = np.array([0., 0.])
 
-    rocket_commands = get_rocket_commands
+    rocket_commands.append(get_rocket_commands(est_position, est_velocity))
 
-    new_time, position, velocity, rotation = sim_step(time, position, velocity, rotation)
+    new_time, position, velocity, rotation = sim_step(time, position, velocity, rotation, rocket_commands.pop(0))
 
     print str(position[1]) + ' ' + str(time)
     altitude_values.append(position[1])
