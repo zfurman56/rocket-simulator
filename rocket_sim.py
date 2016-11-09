@@ -47,6 +47,7 @@ altitude_values = []
 def drag_force(drag_brake_angle, velocity):
     return drag_factor * (1 + drag_gain * math.sin(drag_brake_angle)) * -(velocity ** 2)
 
+# Takes a slew rate for the drag brakes, clamps it, and uses it to compute the new brake angle
 def actuate(commanded_brake_rate, current_angle):
     slew_rate = commanded_brake_rate / step_size
     clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
@@ -54,6 +55,7 @@ def actuate(commanded_brake_rate, current_angle):
     servo_angle_values.append(new_angle)
     return new_angle
 
+# Computes one simulated time step
 def sim_step(time, position, velocity, rotation, drag_brake_angle):
     forces = (gravity * mass)
     forces += thrust(time) * np.array([math.sin(rotation), math.cos(rotation)])
@@ -66,17 +68,20 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle):
 
     return (time, new_position, new_velocity, rotation)
 
+# Estimates apogee altitude with given parameters
 def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle):
     while True:
         time, position, velocity, rotation = sim_step(time, position, velocity, rotation, drag_brake_angle)
         if velocity[1] < 0:
             return position[1]
 
+# Models barometric sensor inaccuracy
 def sensor_model(position, previous_est_position):
     est_position = np.array([0., np.random.normal(position[1], baro_std)])
     est_velocity = (position - previous_est_position) / cmd_period
     return est_position, est_velocity
 
+# Runs PID controller and returns commanded drag brake angle
 def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
     global previous_error
     global integrated_error
@@ -98,6 +103,7 @@ def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_an
     return new_drag_brake_rate
 
 
+# Main simulation loop
 def sim():
 
     global altitude_values, altitude_time_values
