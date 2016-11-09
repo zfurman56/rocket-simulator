@@ -3,11 +3,20 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_rocket_commands():
-    pass
+gravity = np.array([0, -9.8])
 
-standard_deviation = 0.98 #percent
-thrust_scale = (np.random.normal(100, standard_deviation) / 100)
+baro_std = 0.3  # Baro altitude sensor stddev (m)
+max_servo_slew_rate = math.pi / 2 # rad/s
+mass = 0.595 #kilograms
+target_altitude = 236 # meters
+step_size = 0.01 #seconds
+cmd_period = 0.05 #seconds
+kp = 0.05
+ki = 0.0
+kd = 0.0
+drag_factor = 0.0008
+drag_gain = 2
+thrust_scale = 1.02
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
@@ -20,51 +29,123 @@ raw_thrusts = [item[1] for item in raw_thrust]
 # Raw thrust values plus interpolation
 thrust = lambda x: np.interp(x, raw_times, raw_thrusts, right=0)
 
-gravity = np.array([0, -9.8])
 
-mass = 0.595 #kilograms
-position = np.array([0., 0.]) #meters
-rotation = 0. #radians
-velocity = np.array([0., 0.]) #meters/second
+# Global vars
+previous_error = 0
+integrated_error = 0
 
-step_size = 0.01 #seconds
-time = 0. #seconds
+# For input to plotting
+error_values = []
+time_values = []
+servo_angle_values = []
+altitude_time_values = []
+altitude_values = []
 
-def sim_step(time, position, velocity, rotation):
+# Map from drag brake angle to drag force
+#   drag_brake_angle (rad)
+#   velocity (m/s)
+def drag_force(drag_brake_angle, velocity):
+    return drag_factor * (1 + drag_gain * math.sin(drag_brake_angle)) * -(velocity ** 2)
+
+def actuate(commanded_brake_rate, current_angle):
+    slew_rate = commanded_brake_rate / step_size
+    clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
+    new_angle = current_angle + (clamped_slew_rate * step_size)
+    servo_angle_values.append(new_angle)
+    return new_angle
+
+def sim_step(time, position, velocity, rotation, drag_brake_angle):
     forces = (gravity * mass)
-    forces += (thrust(time) * np.array([math.sin(rotation), math.cos(rotation)]))
-    forces += (0.0008 * -(velocity**2)) #crappy drag model
+    forces += thrust(time) * np.array([math.sin(rotation), math.cos(rotation)])
+    forces += drag_force(drag_brake_angle, velocity)
 
-    velocity += ((forces / mass) * step_size)
-    position += (velocity * step_size)
+    new_velocity = velocity + ((forces / mass) * step_size)
+    new_position = position + (velocity * step_size)
 
     time += step_size
 
-    return (time, position, velocity, rotation)
+    return (time, new_position, new_velocity, rotation)
 
-# Used for data plotting
-altitude_values = []
-time_values = []
+def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle):
+    while True:
+        time, position, velocity, rotation = sim_step(time, position, velocity, rotation, drag_brake_angle)
+        if velocity[1] < 0:
+            return position[1]
 
-while True:
+def sensor_model(position, previous_est_position):
+    est_position = np.array([0., np.random.normal(position[1], baro_std)])
+    est_velocity = (position - previous_est_position) / cmd_period
+    return est_position, est_velocity
 
-    forces = np.array([0., 0.])
+def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
+    global previous_error
+    global integrated_error
 
-    rocket_commands = get_rocket_commands
+    #print "est_position: " + str(est_position) + "  est_velocity: " + str(est_velocity)
 
-    new_time, position, velocity, rotation = sim_step(time, position, velocity, rotation)
+    error = estimate_peak_altitude(time, est_position, est_velocity, rotation, drag_brake_angle) - target_altitude
 
-    print str(position[1]) + ' ' + str(time)
-    altitude_values.append(position[1])
+    error_values.append(error)
     time_values.append(time)
 
-    if position[1] < 0:
-        break
+    integrated_error += error
+    derivative_error = (error - previous_error)/cmd_period
 
-    time = new_time
+    previous_error = error
+
+    new_drag_brake_rate = kp*error + ki*integrated_error + kd*derivative_error
+
+    return new_drag_brake_rate
+
+
+def sim():
+
+    global altitude_values, altitude_time_values
+
+    # State vars
+    time = 0. #seconds
+    servo_angle = 0  # Brake angle (rad)
+    position = np.array([0., 0.]) #meters
+    rotation = 0. #radians
+    velocity = np.array([0., 0.]) #meters/second
+    est_position = 0
+
+    while True:
+
+        previous_est_position = np.copy(est_position)
+        est_position, est_velocity = sensor_model(position, previous_est_position)
+
+        if ((thrust(time) == 0) and (velocity[1] > 0)):
+            rate_cmd = get_rocket_command(time, est_position, est_velocity, rotation, servo_angle)
+            servo_angle = actuate(rate_cmd, servo_angle)
+
+        sim_time_end = time + cmd_period - step_size/2
+        while time < sim_time_end:
+            time, position, velocity, rotation = sim_step(time, position, velocity, rotation, servo_angle)
+
+            print str(position[1]) + ' ' + str(time)
+            altitude_values.append(position[1])
+            altitude_time_values.append(time)
+
+        if position[1] < 0:
+            break
+
+sim()
 
 print "Peak altitude: " + str(max(altitude_values))
 
-plt.plot(time_values, altitude_values)
-plt.ylabel('Rocket altitude vs time')
+plt.plot(altitude_time_values, altitude_values)
+plt.ylabel('Altitude (m)')
+plt.xlabel('Time (s)')
+
+plt.figure()
+plt.plot(time_values, error_values)
+plt.ylabel('PID error (m)')
+plt.xlabel('Time (s)')
+
+plt.figure()
+plt.plot(time_values, servo_angle_values)
+plt.ylabel('Servo Angle (rad)')
+plt.xlabel('Time (s)')
+
 plt.show()
