@@ -52,7 +52,7 @@ def actuate(commanded_brake_rate, current_angle):
     slew_rate = commanded_brake_rate / step_size
     clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
     new_angle = current_angle + (clamped_slew_rate * step_size)
-    servo_angle_values.append(new_angle)
+    servo_angle_values.append((new_angle*(180/math.pi)))
     return new_angle
 
 # Computes one simulated time step
@@ -151,7 +151,7 @@ plt.xlabel('Time (s)')
 
 plt.figure()
 plt.plot(time_values, servo_angle_values)
-plt.ylabel('Servo Angle (rad)')
+plt.ylabel('Servo Angle (degrees)')
 plt.xlabel('Time (s)')
 
 plt.show()
