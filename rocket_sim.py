@@ -6,17 +6,17 @@ import matplotlib.pyplot as plt
 gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
-max_servo_slew_rate = math.pi / 2 # rad/s
+max_servo_slew_rate = 30000 # rad/s
 mass = 0.595 #kilograms
 target_altitude = 236 # meters
 step_size = 0.01 #seconds
 cmd_period = 0.05 #seconds
-kp = 0.05
-ki = 0.0
+kp = 0.3
+ki = -0.01
 kd = 0.0
 drag_factor = 0.0008
-drag_gain = 2
-thrust_scale = 1.02
+drag_gain = 5
+thrust_scale = 1.05
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
@@ -28,6 +28,15 @@ raw_thrusts = [item[1] for item in raw_thrust]
 
 # Raw thrust values plus interpolation
 thrust = lambda x: np.interp(x, raw_times, raw_thrusts, right=0)
+
+# Load optimal flight path - precomputed
+optimal_file = open('optimal.txt', 'r')
+optimal_lines = map(lambda line: line.split(', '), optimal_file.readlines())
+
+optimal_positions = [item[0] for item in optimal_lines]
+optimal_times = [item[1] for item in optimal_lines]
+
+optimal = lambda x: np.interp(x, optimal_times, optimal_positions)
 
 
 # Global vars
@@ -52,6 +61,7 @@ def actuate(commanded_brake_rate, current_angle):
     slew_rate = commanded_brake_rate / step_size
     clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
     new_angle = current_angle + (clamped_slew_rate * step_size)
+    new_angle = np.clip(new_angle, 0, math.pi/2)
     servo_angle_values.append((new_angle*(180/math.pi)))
     return new_angle
 
@@ -88,7 +98,7 @@ def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_an
 
     #print "est_position: " + str(est_position) + "  est_velocity: " + str(est_velocity)
 
-    error = estimate_peak_altitude(time, est_position, est_velocity, rotation, drag_brake_angle) - target_altitude
+    error = est_position[1] - optimal(time)
 
     error_values.append(error)
     time_values.append(time)
@@ -141,6 +151,7 @@ sim()
 print "Peak altitude: " + str(max(altitude_values))
 
 plt.plot(altitude_time_values, altitude_values)
+plt.plot(optimal_times, optimal_positions)
 plt.ylabel('Altitude (m)')
 plt.xlabel('Time (s)')
 
