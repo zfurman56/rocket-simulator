@@ -49,9 +49,9 @@ def drag_force(drag_brake_angle, velocity):
 
 # Takes a slew rate for the drag brakes, clamps it, and uses it to compute the new brake angle
 def actuate(commanded_brake_rate, current_angle):
-    slew_rate = commanded_brake_rate / step_size
+    slew_rate = commanded_brake_rate / cmd_period
     clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
-    new_angle = current_angle + (clamped_slew_rate * step_size)
+    new_angle = np.clip((current_angle + (clamped_slew_rate * cmd_period)), 0, (math.pi/2))
     servo_angle_values.append((new_angle*(180/math.pi)))
     return new_angle
 
