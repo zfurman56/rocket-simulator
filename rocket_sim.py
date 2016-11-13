@@ -62,7 +62,7 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle):
     forces += drag_force(drag_brake_angle, velocity)
 
     new_velocity = velocity + ((forces / mass) * step_size)
-    new_position = position + (velocity * step_size)
+    new_position = position + (new_velocity * step_size)
 
     time += step_size
 
