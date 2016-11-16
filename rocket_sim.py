@@ -7,16 +7,16 @@ gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
 max_servo_slew_rate = math.pi / 2 # rad/s
-mass = 0.595 #kilograms
+mass = 0.625 #kilograms
 target_altitude = 236 # meters
 step_size = 0.01 #seconds
 cmd_period = 0.05 #seconds
-kp = 0.05
+kp = 0.006
 ki = 0.0
 kd = 0.0
-drag_factor = 0.0008
-drag_gain = 2
-thrust_scale = 1.02
+drag_factor = 0.0011
+drag_gain = 8
+thrust_scale = 1.0
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
