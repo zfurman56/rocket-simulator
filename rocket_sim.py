@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
+gps_std = 0.8 # GPS velocity sensor stddev (m/s)
 max_servo_slew_rate = math.pi / 2 # rad/s
 mass = 0.625 #kilograms
 target_altitude = 236 # meters
@@ -76,9 +77,10 @@ def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle)
             return position[1]
 
 # Models barometric sensor inaccuracy
-def sensor_model(position, previous_est_position):
+def sensor_model(position, velocity, previous_est_position):
     est_position = np.array([0., np.random.normal(position[1], baro_std)])
-    est_velocity = (position - previous_est_position) / cmd_period
+    gps_velocity = np.array([0., np.random.normal(velocity[1], gps_std)])
+    est_velocity = gps_velocity
     return est_position, est_velocity
 
 # Runs PID controller and returns commanded drag brake angle
@@ -119,7 +121,7 @@ def sim():
     while True:
 
         previous_est_position = np.copy(est_position)
-        est_position, est_velocity = sensor_model(position, previous_est_position)
+        est_position, est_velocity = sensor_model(position, velocity, previous_est_position)
 
         if ((thrust(time) == 0) and (velocity[1] > 0)):
             rate_cmd = get_rocket_command(time, est_position, est_velocity, rotation, servo_angle)
