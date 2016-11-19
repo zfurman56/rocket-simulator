@@ -76,12 +76,15 @@ def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle)
         if velocity[1] < 0:
             return position[1]
 
+est_positions = [0]*2
+est_velocities = [0]*2
+
 # Models barometric sensor inaccuracy
 def sensor_model(position, velocity, previous_est_position):
-    est_position = np.array([0., np.random.normal(position[1], baro_std)])
+    est_positions.append(np.array([0., np.random.normal(position[1], baro_std)]))
     gps_velocity = np.array([0., np.random.normal(velocity[1], gps_std)])
-    est_velocity = gps_velocity
-    return est_position, est_velocity
+    est_velocities.append(gps_velocity)
+    return est_positions.pop(0), est_velocities.pop(0)
 
 # Runs PID controller and returns commanded drag brake angle
 def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
