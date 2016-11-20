@@ -46,7 +46,7 @@ altitude_values = []
 #   drag_brake_angle (rad)
 #   velocity (m/s)
 def drag_force(drag_brake_angle, velocity):
-    return drag_factor * (1 + drag_gain * math.sin(drag_brake_angle)) * -(velocity ** 2)
+    return drag_factor * (1 + drag_gain * (math.sin(drag_brake_angle)**2)) * -(velocity ** 2)
 
 # Takes a slew rate for the drag brakes, clamps it, and uses it to compute the new brake angle
 def actuate(commanded_brake_rate, current_angle):
