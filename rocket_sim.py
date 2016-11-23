@@ -145,16 +145,17 @@ sim()
 
 print "Peak altitude: " + str(max(altitude_values))
 
+plt.subplot(3,1,1)
 plt.plot(altitude_time_values, altitude_values)
 plt.ylabel('Altitude (m)')
 plt.xlabel('Time (s)')
 
-plt.figure()
+plt.subplot(3,1,2)
 plt.plot(time_values, error_values)
 plt.ylabel('PID error (m)')
 plt.xlabel('Time (s)')
 
-plt.figure()
+plt.subplot(3,1,3)
 plt.plot(time_values, servo_angle_values)
 plt.ylabel('Servo Angle (degrees)')
 plt.xlabel('Time (s)')
