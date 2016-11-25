@@ -83,8 +83,8 @@ est_velocities = [0]*2
 
 # Models barometric sensor inaccuracy
 def sensor_model(position, velocity, previous_est_position):
-    est_positions.append(np.array([0., np.random.normal(position[1], baro_std)]))
-    gps_velocity = np.array([0., np.random.normal(velocity[1], gps_std)])
+    est_positions.append(np.random.normal(position, baro_std))
+    gps_velocity = np.random.normal(velocity, gps_std)
     est_velocities.append(gps_velocity)
     return est_positions.pop(0), est_velocities.pop(0)
 
