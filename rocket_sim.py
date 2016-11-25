@@ -10,6 +10,7 @@ gps_std = 0.8 # GPS velocity sensor stddev (m/s)
 max_servo_slew_rate = math.pi / 2 # rad/s
 mass = 0.625 #kilograms
 target_altitude = 236 # meters
+rod_length = 0
 step_size = 0.01 #seconds
 cmd_period = 0.05 #seconds
 kp = 0.006
@@ -67,7 +68,8 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle):
 
     time += step_size
 
-    rotation = math.pi/2 - math.atan2(new_velocity[1], new_velocity[0])
+    if np.linalg.norm(position) > rod_length:
+        rotation = math.pi/2 - math.atan2(new_velocity[1], new_velocity[0])
 
     return (time, new_position, new_velocity, rotation)
 
@@ -119,7 +121,7 @@ def sim():
     time = 0. #seconds
     servo_angle = 0  # Brake angle (rad)
     position = np.array([0., 0.]) #meters
-    rotation = 0.6 #radians
+    rotation = 0.4 #radians
     velocity = np.array([0., 0.]) #meters/second
     est_position = 0
 
