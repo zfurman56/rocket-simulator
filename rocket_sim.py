@@ -121,7 +121,7 @@ def sim():
     time = 0. #seconds
     servo_angle = 0  # Brake angle (rad)
     position = np.array([0., 0.]) #meters
-    rotation = 0.4 #radians
+    rotation = 0.0 #radians
     velocity = np.array([0., 0.]) #meters/second
     est_position = 0
 
