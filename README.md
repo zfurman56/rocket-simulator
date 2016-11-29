@@ -6,21 +6,18 @@ Rocket simulator created by the MA team for TARC 2017
 * Includes drag, gravity, and engine thrust
 * Accepts engine thrust curves in the form of .eng files
 * Models engine thrust deviation with a Gaussian distribution
+* PID controller modulates simulated drag brakes
+* Models sensor delays and inaccuracies, servo slew rate, and launch rod tilt
+* Graphs simulation data with matplotlib
 
 ## In the future
-* Create a PID controller
-  * Later, move the PID to flight computer
-* Test several methods of control and compare viability
-* Model several stages of flight (ascent, descent, etc.)
-  * Create control methods for each stage
-* Add moments and other rotational features
-* Make the system 3D (if needed)
 * Create a more accurate drag model
 * Use actual flight data to improve simulation accuracy
-* Possibly hardware-in-the-loop simulation
+* Currently only used for ascent; in the future, could also be used for descent
+* Possible hardware-in-the-loop simulation
 
 ## How to get started
 * Clone the repo
 * Install [NumPy](https://docs.scipy.org/doc/numpy-1.10.1/user/install.html) dependency
 * Run the program with `python rocket_sim.py <thrust curve file>`
-  * An example thrust curve, `AeroTech_F39.eng`, is included
+  * An example thrust curve, `AeroTech_F52.eng`, is included
