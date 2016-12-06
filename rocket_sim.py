@@ -24,7 +24,7 @@ thrust_scale = 1.0
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
 thrust_lines = filter(lambda line: line[0]!=';', thrust_file.readlines())[1:-1]
-raw_thrust = map(lambda line: map(lambda x: float(x)*thrust_scale, line.split('   ')[1:3]), thrust_lines)
+raw_thrust = map(lambda line: map(lambda x: float(x)*thrust_scale, line.split(' ')), thrust_lines)
 
 raw_times = [item[0] for item in raw_thrust]
 raw_thrusts = [item[1] for item in raw_thrust]
