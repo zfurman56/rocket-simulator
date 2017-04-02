@@ -1,3 +1,10 @@
+###
+# Drag brake curve-fitting tool
+#
+# Fits drag brake angle vs CdA to a cubic function, allowing
+# drag estimation given brake angle.
+###
+
 import math
 import numpy as np
 import matplotlib.pyplot as plt

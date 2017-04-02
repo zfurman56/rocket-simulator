@@ -1,3 +1,11 @@
+###
+# Core simulation code
+#
+# Full 2-D simulation of rocket, including engine thrust,
+# drag, and gravity. Includes drag brakes controlled by a
+# closed-loop PID controller.
+###
+
 import sys
 import math
 import numpy as np
@@ -84,6 +92,7 @@ def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle)
         if velocity[1] < 0:
             return position[1]
 
+# Used as buffer, to simulate delay in baro and GPSs
 est_positions = [0]*2
 est_velocities = [0]*2
 
@@ -134,6 +143,7 @@ def sim():
         previous_est_position = np.copy(est_position)
         est_position, est_velocity = sensor_model(position, velocity, previous_est_position)
 
+        # Actuate drag brakes if rocket is coasting
         if ((thrust(time) == 0) and (velocity[1] > 0)):
             rate_cmd = get_rocket_command(time, est_position, est_velocity, rotation, servo_angle)
             servo_angle = actuate(rate_cmd, servo_angle)
