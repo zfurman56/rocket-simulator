@@ -6,20 +6,20 @@ import matplotlib.pyplot as plt
 gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
-gps_std = 0.8 # GPS velocity sensor stddev (m/s)
+gps_std = 0.1 # GPS velocity sensor stddev (m/s)
 estimation_error = -0.2
-max_servo_slew_rate = math.pi / 2 # rad/s
+max_servo_slew_rate = math.pi * 2 # rad/s
 mass = 0.625 #kilograms
 target_altitude = 236 # meters
 rod_length = 0
 step_size = 0.01 #seconds
-cmd_period = 0.25 #seconds
-kp = 0.01
+cmd_period = 0.01 #seconds
+kp = 0.008
 ki = 0.0
 kd = 0.0
-drag_factor = 0.0011
-drag_gain = 8
-thrust_scale = 1.0
+drag_factor = 0.00185
+drag_gain = 10
+thrust_scale = 0.92
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
