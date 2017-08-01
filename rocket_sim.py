@@ -21,7 +21,7 @@ mass = 0.625 #kilograms
 target_altitude = 236 # meters
 rod_length = 0
 step_size = 0.01 #seconds
-cmd_period = 0.01 #seconds
+cmd_period = 0.05 #seconds
 kp = 0.008
 ki = 0.0
 kd = 0.0
@@ -92,6 +92,19 @@ def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle)
         if velocity[1] < 0:
             return position[1]
 
+# Get standard deviation of pitot tube velocity given pressure accuracy in Pascals and current velocity
+# Uses equations from https://en.wikipedia.org/wiki/Pitot_tube
+def get_pitot_accuracy(pressure_accuracy, velocity):
+    # Differential pressure (difference between static and total)
+    pressure = (1.225 * velocity[1]**2)/2
+
+    if pressure > pressure_accuracy:
+        return 0.5 * (math.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) -
+                      math.sqrt((2 * (pressure - pressure_accuracy)) / 1.225))
+    else:
+        return 0.5 * (math.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) +
+                      math.sqrt((-2 * (pressure - pressure_accuracy)) / 1.225))
+
 # Used as buffer, to simulate delay in baro and GPSs
 est_positions = [0]*2
 est_velocities = [0]*2
@@ -99,8 +112,9 @@ est_velocities = [0]*2
 # Models barometric sensor inaccuracy
 def sensor_model(position, velocity, previous_est_position):
     est_positions.append(np.random.normal(position, baro_std))
-    gps_velocity = np.random.normal(velocity, gps_std)
-    est_velocities.append(gps_velocity)
+    pitot_velocity = np.random.normal(velocity, get_pitot_accuracy((2*68.9), velocity))
+    # gps_velocity = np.random.normal(velocity, gps_std)
+    est_velocities.append(pitot_velocity)
     return est_positions.pop(0), est_velocities.pop(0)
 
 # Runs PID controller and returns commanded drag brake angle
