@@ -10,16 +10,17 @@ import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from my_kalman import kfilter
 
 gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
-gps_std = 0.1 # GPS velocity sensor stddev (m/s)
+accel_std = 0.1  # Accelerometer sensor stddev (m/s^2)
 max_servo_slew_rate = math.pi * 2 # rad/s
 mass = 0.625 #kilograms
 target_altitude = 236 # meters
 rod_length = 0
-step_size = 0.01 #seconds
+step_size = 0.00416666666 #seconds
 cmd_period = 0.05 #seconds
 kp = 0.008
 ki = 0.0
@@ -50,7 +51,12 @@ error_values = []
 time_values = []
 servo_angle_values = []
 altitude_time_values = []
+kalman_altitude_values = []
+kalman_velocity_values = []
+kalman_accel_values = []
 altitude_values = []
+velocity_values = []
+accel_values = []
 
 # Map from drag brake angle to drag force
 #   drag_brake_angle (rad)
@@ -84,7 +90,7 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation
     if np.linalg.norm(position) > rod_length:
         rotation = math.pi/2 - math.atan2(new_velocity[1], new_velocity[0])
 
-    return (time, new_position, new_velocity, rotation)
+    return (time, new_position, new_velocity, rotation, acceleration)
 
 # Estimates apogee altitude with given parameters
 def estimate_peak_altitude(position, velocity, drag_brake_angle):
@@ -105,16 +111,28 @@ def get_pitot_accuracy(pressure_accuracy, velocity):
                       math.sqrt((-2 * (pressure - pressure_accuracy)) / 1.225))
 
 # Used as buffer, to simulate delay in baro and GPSs
-est_positions = [0]*2
-est_velocities = [0]*2
+est_positions = []
+# est_velocities = [0]*2
+est_accels = []
 
-# Models barometric sensor inaccuracy
-def sensor_model(position, velocity, previous_est_position):
-    est_positions.append(np.random.normal(position, baro_std))
-    pitot_velocity = np.random.normal(velocity, get_pitot_accuracy((2*68.9), velocity))
-    # gps_velocity = np.random.normal(velocity, gps_std)
-    est_velocities.append(pitot_velocity)
-    return est_positions.pop(0), est_velocities.pop(0)
+# # Models barometric sensor inaccuracy
+# def sensor_model(position, acceleration, rotation):
+#     est_positions.append(np.random.normal(position[1], baro_std))
+#     pitot_velocity = np.random.normal(velocity, get_pitot_accuracy((2*68.9), velocity))
+#     gps_velocity = np.random.normal(velocity, gps_std)
+#     est_velocities.append(pitot_velocity)
+#     est_accels.append(np.random.normal(acceleration[1], accel_std))
+#     return est_positions.pop(0), est_accels.pop(0)
+
+def baro_model(position):
+    est_positions.append(np.random.normal(position[1], baro_std))
+    return est_positions.pop(0)
+
+def accel_model(acceleration, rotation):
+    # acceleration vector projected to rotation
+    accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1])-rotation) * np.linalg.norm(acceleration)
+    est_accels.append(np.random.normal(accel_vector, accel_std))
+    return est_accels.pop(0)
 
 # Runs PID controller and returns commanded drag brake angle
 def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
@@ -141,32 +159,48 @@ def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_an
 # Main simulation loop
 def sim():
 
-    global altitude_values, altitude_time_values
+    global altitude_values, velocity_values, altitude_time_values
 
     # State vars
-    time = 0. #seconds
+    time = -5. #seconds
     servo_angle = 0  # Brake angle (rad)
     position = np.array([0., 0.]) #meters
     rotation = 0.0 #radians
     velocity = np.array([0., 0.]) #meters/second
-    est_position = 0
+    acceleration = np.array([0., 0.])
+    # est_position = 0
 
     while True:
 
-        previous_est_position = np.copy(est_position)
-        est_position, est_velocity = sensor_model(position, velocity, previous_est_position)
+        # previous_est_position = np.copy(est_position)
 
         # Actuate drag brakes if rocket is coasting
-        if ((thrust(time) == 0) and (velocity[1] > 0)):
-            rate_cmd = get_rocket_command(time, est_position, est_velocity, rotation, servo_angle)
-            servo_angle = actuate(rate_cmd, servo_angle)
+        rate_cmd = get_rocket_command(time, np.array([0, kfilter.x[0]]), np.array([0, kfilter.x[1]]), rotation, servo_angle)
+        servo_angle = actuate(rate_cmd, servo_angle)
 
         sim_time_end = time + cmd_period - step_size/2
+        first = True
         while time < sim_time_end:
-            time, position, velocity, rotation = sim_step(time, position, velocity, rotation, servo_angle, False)
+            if time > 0:
+                time, position, velocity, rotation, acceleration = sim_step(time, position, velocity, rotation, servo_angle, False)
+            else:
+                time += step_size
+
+            kfilter.predict()
+            if first:
+                kfilter.update(np.array([baro_model(position), accel_model(acceleration-gravity, rotation)+gravity[1]]))
+            else:
+                kfilter.update2(np.array([accel_model(acceleration-gravity, rotation)+gravity[1]]))
+
+            first = False
 
             print str(position[1]) + ' ' + str(time)
             altitude_values.append(position[1])
+            kalman_altitude_values.append(kfilter.x[0])
+            kalman_velocity_values.append(kfilter.x[1])
+            kalman_accel_values.append(kfilter.x[2])
+            accel_values.append(acceleration[1])
+            velocity_values.append(velocity[1])
             altitude_time_values.append(time)
 
         if position[1] < 0:
@@ -175,18 +209,32 @@ def sim():
 sim()
 
 print "Peak altitude: " + str(max(altitude_values))
+print "Flight time: " + str(max(altitude_time_values))
 
-plt.subplot(3,1,1)
+plt.subplot(5,1,1)
 plt.plot(altitude_time_values, altitude_values)
+plt.plot(altitude_time_values, kalman_altitude_values)
 plt.ylabel('Altitude (m)')
 plt.xlabel('Time (s)')
 
-plt.subplot(3,1,2)
+plt.subplot(5,1,2)
+plt.plot(altitude_time_values, velocity_values)
+plt.plot(altitude_time_values, kalman_velocity_values)
+plt.ylabel('Velocity (m/s)')
+plt.xlabel('Time (s)')
+
+plt.subplot(5,1,3)
+plt.plot(altitude_time_values, accel_values)
+plt.plot(altitude_time_values, kalman_accel_values)
+plt.ylabel('Acceleration (m/s^2)')
+plt.xlabel('Time (s)')
+
+plt.subplot(5,1,4)
 plt.plot(time_values, error_values)
 plt.ylabel('PID error (m)')
 plt.xlabel('Time (s)')
 
-plt.subplot(3,1,3)
+plt.subplot(5,1,5)
 plt.plot(time_values, servo_angle_values)
 plt.ylabel('Servo Angle (degrees)')
 plt.xlabel('Time (s)')
