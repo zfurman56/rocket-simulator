@@ -87,11 +87,9 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation
     return (time, new_position, new_velocity, rotation)
 
 # Estimates apogee altitude with given parameters
-def estimate_peak_altitude(time, position, velocity, rotation, drag_brake_angle):
-    while True:
-        time, position, velocity, rotation = sim_step(time, position, velocity, rotation, drag_brake_angle, True)
-        if velocity[1] < 0:
-            return position[1]
+def estimate_peak_altitude(position, velocity, drag_brake_angle):
+    term_vel_sqrd = (mass * -gravity[1]) / get_drag_factor(drag_brake_angle, True)
+    return position[1] + ((term_vel_sqrd / (2 * -gravity[1])) * np.log((((velocity[1] ** 2) + term_vel_sqrd) / term_vel_sqrd)))
 
 # Get standard deviation of pitot tube velocity given pressure accuracy in Pascals and current velocity
 # Uses equations from https://en.wikipedia.org/wiki/Pitot_tube
@@ -125,7 +123,7 @@ def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_an
 
     #print "est_position: " + str(est_position) + "  est_velocity: " + str(est_velocity)
 
-    error = estimate_peak_altitude(time, est_position, est_velocity, rotation, drag_brake_angle) - target_altitude
+    error = estimate_peak_altitude(est_position, est_velocity, drag_brake_angle) - target_altitude
 
     error_values.append(error)
     time_values.append(time)
