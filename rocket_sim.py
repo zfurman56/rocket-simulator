@@ -75,8 +75,9 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation
     forces += thrust(time) * np.array([math.sin(rotation), math.cos(rotation)])
     forces += get_drag_factor(drag_brake_angle, is_estimation) * -(velocity ** 2) * np.sign(velocity)
 
-    new_velocity = velocity + ((forces / mass) * step_size)
-    new_position = position + (new_velocity * step_size)
+    acceleration = (forces / mass)
+    new_velocity = velocity + (acceleration * step_size)
+    new_position = position + (velocity * step_size) + (0.5 * acceleration * (step_size**2))
 
     time += step_size
 
