@@ -27,7 +27,7 @@ kd = 0.0
 drag_factor = 0.00185
 es_drag_factor = 0.00185
 drag_gain = 10
-thrust_scale = 0.92
+thrust_scale = 1.0
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
