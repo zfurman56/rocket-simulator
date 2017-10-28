@@ -15,7 +15,6 @@ gravity = np.array([0, -9.8])
 
 baro_std = 0.3  # Baro altitude sensor stddev (m)
 gps_std = 0.1 # GPS velocity sensor stddev (m/s)
-estimation_error = -0.2
 max_servo_slew_rate = math.pi * 2 # rad/s
 mass = 0.625 #kilograms
 target_altitude = 236 # meters
@@ -26,6 +25,7 @@ kp = 0.008
 ki = 0.0
 kd = 0.0
 drag_factor = 0.00185
+es_drag_factor = 0.00185
 drag_gain = 10
 thrust_scale = 0.92
 
@@ -55,11 +55,11 @@ altitude_values = []
 # Map from drag brake angle to drag force
 #   drag_brake_angle (rad)
 #   velocity (m/s)
-def drag_force(drag_brake_angle, velocity, is_estimation):
+def get_drag_factor(drag_brake_angle, is_estimation):
     if is_estimation:
-        return drag_factor * ((1 + estimation_error) + (drag_gain * (math.sin(drag_brake_angle)**2))) * -(velocity ** 2)
+        return es_drag_factor * (1 + (drag_gain * (math.sin(drag_brake_angle)**2)))
     else:
-        return drag_factor * (1 + (drag_gain * (math.sin(drag_brake_angle)**2))) * -(velocity ** 2)
+        return drag_factor * (1 + (drag_gain * (np.sin(drag_brake_angle)**2)))
 
 # Takes a slew rate for the drag brakes, clamps it, and uses it to compute the new brake angle
 def actuate(commanded_brake_rate, current_angle):
@@ -73,7 +73,7 @@ def actuate(commanded_brake_rate, current_angle):
 def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation):
     forces = (gravity * mass)
     forces += thrust(time) * np.array([math.sin(rotation), math.cos(rotation)])
-    forces += drag_force(drag_brake_angle, velocity, is_estimation)
+    forces += get_drag_factor(drag_brake_angle, is_estimation) * -(velocity ** 2) * np.sign(velocity)
 
     new_velocity = velocity + ((forces / mass) * step_size)
     new_position = position + (new_velocity * step_size)
