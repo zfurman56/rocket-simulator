@@ -5,7 +5,7 @@
 ; the certification file. The curve drawn with these data points is as
 ; close to the certification curve as can be with such a limited
 ; number of points (32) allowed with wRASP up to v1.6.
- F52 29 124 5-8-11 .0366 .1214 A
+; F52 29 124 5-8-11 .0366 .1214 A
 0.012 46.899
 0.033 61.778
 0.056 69.441

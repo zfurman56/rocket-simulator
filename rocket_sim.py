@@ -11,6 +11,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from my_kalman import kfilter
 
+import compat
+from engparser import NARThrustParser
+from utils import eng_filename_argv
 from const import (
     GRAVITY,
     BARO_STD,
@@ -24,20 +27,14 @@ from const import (
     KP, KI, KD,
     DRAG_FACTOR,
     ES_DRAG_FACTOR,
-    DRAG_GAIN,
-    THRUST_SCALE
+    DRAG_GAIN
 )
 
 # Supply .eng thrust file via command args
-thrust_file = open(sys.argv[1], 'r')
-thrust_lines = [x for x in thrust_file.readlines() if x[0]!=';'][1:-1]
-raw_thrust = [[float(x) for x in line.split(' ')] for line in thrust_lines]
-
-raw_times = [item[0] for item in raw_thrust]
-raw_thrusts = [item[1]*THRUST_SCALE for item in raw_thrust]
-
-# Raw thrust values plus interpolation
-thrust = lambda x: np.interp(x, raw_times, raw_thrusts, right=0)
+with open(eng_filename_argv(sys.argv)) as f:
+    ntp = NARThrustParser(f)
+    # Raw thrust values plus interpolation
+    thrust = lambda x: np.interp(x, ntp.times, ntp.thrust, right=0)
 
 
 # Global vars
@@ -209,7 +206,7 @@ def sim():
 
             first = False
 
-            print('Position:', position[1], 'Time (sec):', time)
+            # print('Position:', position[1], 'Time (sec):', time)
             altitude_values.append(position[1])
             kalman_altitude_values.append(kfilter.x[0])
             kalman_velocity_values.append(kfilter.x[1])
