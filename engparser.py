@@ -4,7 +4,7 @@ class NARThrustParser:
     def __init__(self, eng_file, thrust_scl=THRUST_SCALE):
         self.thrust_scl = thrust_scl
         self._tdata = [tuple(float(x) for x in line.split(' ')) \
-                        for line in eng_file.readlines() if line[0] != ';']
+                        for line in eng_file.readlines() if line[0] not in (';', ' ')]
 
     @property
     def _data_tuple(self):

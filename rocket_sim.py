@@ -34,7 +34,7 @@ from const import (
 with open(eng_filename_argv(sys.argv)) as f:
     ntp = NARThrustParser(f)
     # Raw thrust values plus interpolation
-    thrust = lambda x: np.interp(x, ntp.times, ntp.thrust, right=0)
+    thrust = lambda x: np.interp(x, ntp.time, ntp.thrust, right=0)
 
 
 # Global vars
