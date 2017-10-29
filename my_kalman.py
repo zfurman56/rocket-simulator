@@ -1,5 +1,5 @@
 import numpy as np
-from kalman import KalmanFilter, Q_discrete_white_noise
+from kalman import KalmanFilter
 
 dt = 0.00416666666
 

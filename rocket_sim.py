@@ -1,42 +1,40 @@
-###
-# Core simulation code
-#
-# Full 2-D simulation of rocket, including engine thrust,
-# drag, and gravity. Includes drag brakes controlled by a
-# closed-loop PID controller.
-###
+"""
+Core simulation code
+
+Full 2-D simulation of rocket, including engine thrust,
+drag, and gravity. Includes drag brakes controlled by a
+closed-loop PID controller.
+"""
 
 import sys
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 from my_kalman import kfilter
 
-gravity = np.array([0, -9.8])
-
-baro_std = 0.3  # Baro altitude sensor stddev (m)
-accel_std = 0.1  # Accelerometer sensor stddev (m/s^2)
-max_servo_slew_rate = math.pi * 2 # rad/s
-mass = 0.625 #kilograms
-target_altitude = 236 # meters
-rod_length = 0
-step_size = 0.00416666666 #seconds
-cmd_period = 0.05 #seconds
-kp = 0.008
-ki = 0.0
-kd = 0.0
-drag_factor = 0.00185
-es_drag_factor = 0.00185
-drag_gain = 10
-thrust_scale = 1.0
+from const import (
+    GRAVITY,
+    BARO_STD,
+    ACCEL_STD,
+    MAX_SERVO_SLEW_RATE,
+    MASS,
+    TARGET_APOGEE,
+    ROD_LEN,
+    STEP_SIZE,
+    CMD_PERIOD,
+    KP, KI, KD,
+    DRAG_FACTOR,
+    ES_DRAG_FACTOR,
+    DRAG_GAIN,
+    THRUST_SCALE
+)
 
 # Supply .eng thrust file via command args
 thrust_file = open(sys.argv[1], 'r')
-thrust_lines = filter(lambda line: line[0]!=';', thrust_file.readlines())[1:-1]
-raw_thrust = map(lambda line: map(lambda x: float(x), line.split(' ')), thrust_lines)
+thrust_lines = [x for x in thrust_file.readlines() if x[0]!=';'][1:-1]
+raw_thrust = [[float(x) for x in line.split(' ')] for line in thrust_lines]
 
 raw_times = [item[0] for item in raw_thrust]
-raw_thrusts = [item[1]*thrust_scale for item in raw_thrust]
+raw_thrusts = [item[1]*THRUST_SCALE for item in raw_thrust]
 
 # Raw thrust values plus interpolation
 thrust = lambda x: np.interp(x, raw_times, raw_thrusts, right=0)
@@ -58,66 +56,76 @@ altitude_values = []
 velocity_values = []
 accel_values = []
 
-# Map from drag brake angle to drag force
-#   drag_brake_angle (rad)
-#   velocity (m/s)
 def get_drag_factor(drag_brake_angle, is_estimation):
+    """Map from drag brake angle to drag force
+    drag_brake_angle: (rad)
+    returns: velocity (m/s)
+    """
+    vel = 1 + DRAG_GAIN * np.sin(drag_brake_angle)**2
     if is_estimation:
-        return es_drag_factor * (1 + (drag_gain * (math.sin(drag_brake_angle)**2)))
-    else:
-        return drag_factor * (1 + (drag_gain * (np.sin(drag_brake_angle)**2)))
+        return ES_DRAG_FACTOR * vel
+    return DRAG_FACTOR * vel
 
-# Takes a slew rate for the drag brakes, clamps it, and uses it to compute the new brake angle
 def actuate(commanded_brake_rate, current_angle):
-    slew_rate = commanded_brake_rate / cmd_period
-    clamped_slew_rate = np.clip(slew_rate, -max_servo_slew_rate, max_servo_slew_rate)
-    new_angle = np.clip((current_angle + (clamped_slew_rate * cmd_period)), 0, (math.pi/2))
-    servo_angle_values.append((new_angle*(180/math.pi)))
+    """Takes a slew rate for the drag brakes, clamps it,
+    and uses it to compute the new brake angle.
+    """
+    slew_rate = commanded_brake_rate / CMD_PERIOD
+    clamped_slew_rate = np.clip(slew_rate, -MAX_SERVO_SLEW_RATE, MAX_SERVO_SLEW_RATE)
+    new_angle = np.clip((current_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
+    servo_angle_values.append((new_angle*(180/np.pi)))
     return new_angle
 
-# Computes one simulated time step
 def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation):
-    forces = (gravity * mass)
-    forces += thrust(time) * np.array([math.sin(rotation), math.cos(rotation)])
-    forces += get_drag_factor(drag_brake_angle, is_estimation) * -(velocity ** 2) * np.sign(velocity)
+    """Computes one simulated time step.
+    """
+    forces = GRAVITY * MASS
+    forces += thrust(time) * np.array([np.sin(rotation), np.cos(rotation)])
+    forces += get_drag_factor(drag_brake_angle, is_estimation) * -(velocity**2) * np.sign(velocity)
 
-    acceleration = (forces / mass)
-    new_velocity = velocity + (acceleration * step_size)
-    new_position = position + (velocity * step_size) + (0.5 * acceleration * (step_size**2))
+    acceleration = (forces / MASS)
+    new_velocity = velocity + (acceleration * STEP_SIZE)
+    new_position = position + (velocity * STEP_SIZE) + (0.5 * acceleration * STEP_SIZE**2)
 
-    time += step_size
+    time += STEP_SIZE
 
-    if np.linalg.norm(position) > rod_length:
-        rotation = math.pi/2 - math.atan2(new_velocity[1], new_velocity[0])
+    if np.linalg.norm(position) > ROD_LEN:
+        rotation = np.pi/2 - np.arctan2(new_velocity[1], new_velocity[0])
 
     return (time, new_position, new_velocity, rotation, acceleration)
 
-# Estimates apogee altitude with given parameters
 def estimate_peak_altitude(position, velocity, drag_brake_angle):
-    term_vel_sqrd = (mass * -gravity[1]) / get_drag_factor(drag_brake_angle, True)
-    return position[1] + ((term_vel_sqrd / (2 * -gravity[1])) * np.log((((velocity[1] ** 2) + term_vel_sqrd) / term_vel_sqrd)))
+    """Estimates apogee altitude with given parameters.
+    """
+    term_vel_sqrd = (MASS * -GRAVITY[1]) / get_drag_factor(drag_brake_angle, True)
+    return position[1] + (term_vel_sqrd / (2 * -GRAVITY[1]) *
+                          np.log((velocity[1]**2 + term_vel_sqrd) / term_vel_sqrd))
 
-# Get standard deviation of pitot tube velocity given pressure accuracy in Pascals and current velocity
-# Uses equations from https://en.wikipedia.org/wiki/Pitot_tube
 def get_pitot_accuracy(pressure_accuracy, velocity):
+    """Get standard deviation of pitot tube velocity given pressure
+    accuracy in Pascals and current velocity.
+
+    Uses equations from https://en.wikipedia.org/wiki/Pitot_tube
+    """
     # Differential pressure (difference between static and total)
     pressure = (1.225 * velocity[1]**2)/2
 
     if pressure > pressure_accuracy:
-        return 0.5 * (math.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) -
-                      math.sqrt((2 * (pressure - pressure_accuracy)) / 1.225))
+        return 0.5 * (np.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) -
+                      np.sqrt((2 * (pressure - pressure_accuracy)) / 1.225))
     else:
-        return 0.5 * (math.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) +
-                      math.sqrt((-2 * (pressure - pressure_accuracy)) / 1.225))
+        return 0.5 * (np.sqrt((2 * (pressure + pressure_accuracy)) / 1.225) +
+                      np.sqrt((-2 * (pressure - pressure_accuracy)) / 1.225))
 
 # Used as buffer, to simulate delay in baro and GPSs
 est_positions = []
 # est_velocities = [0]*2
 est_accels = []
 
-# # Models barometric sensor inaccuracy
 # def sensor_model(position, acceleration, rotation):
-#     est_positions.append(np.random.normal(position[1], baro_std))
+#     """Models barometric sensor inaccuracy.
+#     """
+#     est_positions.append(np.random.normal(position[1], BARO_STD))
 #     pitot_velocity = np.random.normal(velocity, get_pitot_accuracy((2*68.9), velocity))
 #     gps_velocity = np.random.normal(velocity, gps_std)
 #     est_velocities.append(pitot_velocity)
@@ -125,33 +133,36 @@ est_accels = []
 #     return est_positions.pop(0), est_accels.pop(0)
 
 def baro_model(position):
-    est_positions.append(np.random.normal(position[1], baro_std))
+    est_positions.append(np.random.normal(position[1], BARO_STD))
     return est_positions.pop(0)
 
 def accel_model(acceleration, rotation):
-    # acceleration vector projected to rotation
-    accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1])-rotation) * np.linalg.norm(acceleration)
-    est_accels.append(np.random.normal(accel_vector, accel_std))
+    """"Acceleration vector projected to rotation.
+    """
+    accel_vector = np.cos(np.arctan2(acceleration[0],
+                                     acceleration[1])-rotation) * np.linalg.norm(acceleration)
+    est_accels.append(np.random.normal(accel_vector, ACCEL_STD))
     return est_accels.pop(0)
 
-# Runs PID controller and returns commanded drag brake angle
 def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
+    """Runs PID controller and returns commanded drag brake angle.
+    """
     global previous_error
     global integrated_error
 
-    #print "est_position: " + str(est_position) + "  est_velocity: " + str(est_velocity)
+    # print('est_position:', est_position, 'est_velocity (m/s):', est_velocity)
 
-    error = estimate_peak_altitude(est_position, est_velocity, drag_brake_angle) - target_altitude
+    error = estimate_peak_altitude(est_position, est_velocity, drag_brake_angle) - TARGET_APOGEE
 
     error_values.append(error)
     time_values.append(time)
 
     integrated_error += error
-    derivative_error = (error - previous_error)/cmd_period
+    derivative_error = (error - previous_error)/CMD_PERIOD
 
     previous_error = error
 
-    new_drag_brake_rate = kp*error + ki*integrated_error + kd*derivative_error
+    new_drag_brake_rate = KP*error + KI*integrated_error + KD*derivative_error
 
     return new_drag_brake_rate
 
@@ -175,26 +186,30 @@ def sim():
         # previous_est_position = np.copy(est_position)
 
         # Actuate drag brakes if rocket is coasting
-        rate_cmd = get_rocket_command(time, np.array([0, kfilter.x[0]]), np.array([0, kfilter.x[1]]), rotation, servo_angle)
+        rate_cmd = get_rocket_command(time, np.array([0, kfilter.x[0]]),
+                                      np.array([0, kfilter.x[1]]), rotation, servo_angle)
         servo_angle = actuate(rate_cmd, servo_angle)
 
-        sim_time_end = time + cmd_period - step_size/2
+        sim_time_end = time + CMD_PERIOD - STEP_SIZE/2
         first = True
         while time < sim_time_end:
             if time > 0:
-                time, position, velocity, rotation, acceleration = sim_step(time, position, velocity, rotation, servo_angle, False)
+                time, position, velocity, rotation, acceleration = sim_step(time, position,
+                                                                            velocity, rotation,
+                                                                            servo_angle, False)
             else:
-                time += step_size
+                time += STEP_SIZE
 
             kfilter.predict()
             if first:
-                kfilter.update(np.array([baro_model(position), accel_model(acceleration-gravity, rotation)+gravity[1]]))
+                kfilter.update(np.array([baro_model(position),
+                                         accel_model(acceleration-GRAVITY, rotation)+GRAVITY[1]]))
             else:
-                kfilter.update2(np.array([accel_model(acceleration-gravity, rotation)+gravity[1]]))
+                kfilter.update2(np.array([accel_model(acceleration-GRAVITY, rotation)+GRAVITY[1]]))
 
             first = False
 
-            print str(position[1]) + ' ' + str(time)
+            print('Position:', position[1], 'Time (sec):', time)
             altitude_values.append(position[1])
             kalman_altitude_values.append(kfilter.x[0])
             kalman_velocity_values.append(kfilter.x[1])
@@ -208,33 +223,33 @@ def sim():
 
 sim()
 
-print "Peak altitude: " + str(max(altitude_values))
-print "Flight time: " + str(max(altitude_time_values))
+print('Peak altitude (m):', max(altitude_values))
+print('Flight time (sec):', max(altitude_time_values))
 
-plt.subplot(5,1,1)
+plt.subplot(5, 1, 1)
 plt.plot(altitude_time_values, altitude_values)
 plt.plot(altitude_time_values, kalman_altitude_values)
 plt.ylabel('Altitude (m)')
 plt.xlabel('Time (s)')
 
-plt.subplot(5,1,2)
+plt.subplot(5, 1, 2)
 plt.plot(altitude_time_values, velocity_values)
 plt.plot(altitude_time_values, kalman_velocity_values)
 plt.ylabel('Velocity (m/s)')
 plt.xlabel('Time (s)')
 
-plt.subplot(5,1,3)
+plt.subplot(5, 1, 3)
 plt.plot(altitude_time_values, accel_values)
 plt.plot(altitude_time_values, kalman_accel_values)
 plt.ylabel('Acceleration (m/s^2)')
 plt.xlabel('Time (s)')
 
-plt.subplot(5,1,4)
+plt.subplot(5, 1, 4)
 plt.plot(time_values, error_values)
 plt.ylabel('PID error (m)')
 plt.xlabel('Time (s)')
 
-plt.subplot(5,1,5)
+plt.subplot(5, 1, 5)
 plt.plot(time_values, servo_angle_values)
 plt.ylabel('Servo Angle (degrees)')
 plt.xlabel('Time (s)')

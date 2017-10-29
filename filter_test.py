@@ -24,7 +24,7 @@ for i in range(160):
 
         kfilter.predict()
         if i2 == 0:
-            kfilter.update(np.array([np.random.normal(position, 0.5), np.random.normal(accel, 0.2)]))
+            kfilter.update(np.array([np.random.normal(position, .5), np.random.normal(accel, 0.2)]))
         else:
             kfilter.update2(np.array([np.random.normal(accel, 0.2)]))
 

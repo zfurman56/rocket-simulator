@@ -3,6 +3,8 @@ from numpy import dot, zeros, eye, isscalar, shape
 from scipy.stats import multivariate_normal
 import scipy.linalg as linalg
 
+# Returns the matrix multiplication of A*B*C
+dot3 = lambda A, B, C: dot(A, dot(B, C))
 
 def Q_discrete_white_noise(dim, dt=1., var=1.):
     """ Returns the Q matrix for the Discrete Constant White Noise
@@ -30,19 +32,13 @@ def Q_discrete_white_noise(dim, dt=1., var=1.):
     assert dim == 2 or dim == 3
     if dim == 2:
         Q = np.array([[.25*dt**4, .5*dt**3],
-                   [ .5*dt**3,    dt**2]], dtype=float)
+                      [.5*dt**3, dt**2]], dtype=float)
     else:
         Q = np.array([[.25*dt**4, .5*dt**3, .5*dt**2],
-                   [ .5*dt**3,    dt**2,       dt],
-                   [ .5*dt**2,       dt,        1]], dtype=float)
+                      [.5*dt**3, dt**2, dt],
+                      [.5*dt**2, dt, 1]], dtype=float)
 
     return Q * var
-
-
-def dot3(A,B,C):
-    """ Returns the matrix multiplication of A*B*C"""
-    return dot(A, dot(B,C))
-
 
 def logpdf(x, mean, cov, allow_singular=True):
     """Computes the log of the probability density function of the normal
@@ -146,7 +142,7 @@ class KalmanFilter(object):
         self.dim_z = dim_z
         self.dim_u = dim_u
 
-        self.x = zeros((dim_x,1)) # state
+        self.x = zeros((dim_x, 1)) # state
         self.P = eye(dim_x)       # uncertainty covariance
         self.Q = eye(dim_x)       # process uncertainty
         self.B = 0                # control transition matrix
@@ -206,7 +202,7 @@ class KalmanFilter(object):
 
         # handle special case: if z is in form [[z]] but x is not a column
         # vector dimensions will not match
-        if x.ndim==1 and shape(z) == (1,1):
+        if x.ndim == 1 and shape(z) == (1, 1):
             z = z[0]
 
         if shape(z) == (): # is it scalar, e.g. z=3 or z=np.array(3)
@@ -216,9 +212,9 @@ class KalmanFilter(object):
         # error (residual) between measurement and prediction
         Hx = dot(H, x)
 
-        assert shape(Hx) == shape(z) or (shape(Hx) == (1,1) and shape(z) == (1,)), \
+        assert shape(Hx) == shape(z) or (shape(Hx) == (1, 1) and shape(z) == (1,)), \
                'shape of z should be {}, but it is {}'.format(
-               shape(Hx), shape(z))
+                   shape(Hx), shape(z))
         self.y = z - Hx
 
         # S = HPH' + R
@@ -267,38 +263,38 @@ class KalmanFilter(object):
         P = self.P
 
         assert x.ndim == 1 or x.ndim == 2, \
-                "x must have one or two dimensions, but has {}".format(
+            "x must have one or two dimensions, but has {}".format(
                 x.ndim)
 
         if x.ndim == 1:
             assert x.shape[0] == self.dim_x, \
                    "Shape of x must be ({},{}), but is {}".format(
-                   self.dim_x, 1, x.shape)
+                       self.dim_x, 1, x.shape)
         else:
             assert x.shape == (self.dim_x, 1), \
-                   "Shape of x must be ({},{}), but is {}".format(
-                   self.dim_x, 1, x.shape)
+                "Shape of x must be ({},{}), but is {}".format(
+                    self.dim_x, 1, x.shape)
 
         assert P.shape == (self.dim_x, self.dim_x), \
-               "Shape of P must be ({},{}), but is {}".format(
-               self.dim_x, self.dim_x, P.shape)
+            "Shape of P must be ({},{}), but is {}".format(
+                self.dim_x, self.dim_x, P.shape)
 
         assert Q.shape == (self.dim_x, self.dim_x), \
-               "Shape of P must be ({},{}), but is {}".format(
-               self.dim_x, self.dim_x, P.shape)
+            "Shape of P must be ({},{}), but is {}".format(
+                self.dim_x, self.dim_x, P.shape)
 
         assert F.shape == (self.dim_x, self.dim_x), \
                "Shape of F must be ({},{}), but is {}".format(
-               self.dim_x, self.dim_x, F.shape)
+                   self.dim_x, self.dim_x, F.shape)
 
 
         assert np.ndim(H) == 2, \
                "Shape of H must be (dim_z, {}), but is {}".format(
-               P.shape[0], shape(H))
+                   P.shape[0], shape(H))
 
         assert H.shape[1] == P.shape[0], \
                "Shape of H must be (dim_z, {}), but is {}".format(
-               P.shape[0], H.shape)
+                   P.shape[0], H.shape)
 
         # shape of R must be the same as HPH'
         hph_shape = (H.shape[0], H.shape[0])
@@ -306,9 +302,9 @@ class KalmanFilter(object):
 
         if H.shape[0] == 1:
             # r can be scalar, 1D, or 2D in this case
-            assert r_shape == () or r_shape == (1,) or r_shape == (1,1), \
+            assert r_shape == () or r_shape == (1,) or r_shape == (1, 1), \
             "R must be scalar or one element array, but is shaped {}".format(
-            r_shape)
+                r_shape)
         else:
             assert r_shape == hph_shape, \
             "shape of R should be {} but it is {}".format(hph_shape, r_shape)
@@ -323,9 +319,9 @@ class KalmanFilter(object):
         Hx = dot(H, x)
 
         if z_shape == (): # scalar or np.array(scalar)
-            assert Hx.ndim == 1 or shape(Hx) == (1,1), \
+            assert Hx.ndim == 1 or shape(Hx) == (1, 1), \
             "shape of z should be {}, not {} for the given H".format(
-                   shape(Hx), z_shape)
+                shape(Hx), z_shape)
 
         elif shape(Hx) == (1,):
             assert z_shape[0] == 1, 'Shape of z must be {} for the given H'.format(shape(Hx))
@@ -334,12 +330,12 @@ class KalmanFilter(object):
             assert (z_shape == shape(Hx) or
                     (len(z_shape) == 1 and shape(Hx) == (z_shape[0], 1))), \
                     "shape of z should be {}, not {} for the given H".format(
-                    shape(Hx), z_shape)
+                        shape(Hx), z_shape)
 
-        if np.ndim(Hx) > 1 and shape(Hx) != (1,1):
+        if np.ndim(Hx) > 1 and shape(Hx) != (1, 1):
             assert shape(Hx) == z_shape, \
                'shape of z should be {} for the given H, but it is {}'.format(
-               shape(Hx), z_shape)
+                   shape(Hx), z_shape)
 
 
     def predict(self, u=0, B=None, F=None, Q=None):
