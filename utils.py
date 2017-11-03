@@ -6,7 +6,7 @@ def help():
     Usage: python rocket_sim.py eng_file
     """
 
-def eng_filename_argv(argv):
+def validate_engine_file(argv):
     assert len(argv) > 1, 'Incorrect arguments.\n\n{}'.format(help())
     filename = argv[1]
 

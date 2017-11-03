@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 from my_kalman import kfilter
 
 import compat
-from engparser import NARThrustParser
+from engine import RocketEngine
 from pid import PIDController
-from utils import eng_filename_argv
+from utils import validate_engine_file
 from params import (
     GRAVITY,
     BARO_STD,
@@ -32,10 +32,8 @@ from params import (
 )
 
 # Supply .eng thrust file via command args
-with open(eng_filename_argv(sys.argv)) as f:
-    ntp = NARThrustParser(f)
-    # Raw thrust values plus interpolation
-    thrust = lambda x: np.interp(x, ntp.time, ntp.thrust, right=0)
+with open(validate_engine_file(sys.argv)) as f:
+    engine = RocketEngine(f)
 
 
 # Global vars
@@ -79,7 +77,7 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation
     """Computes one simulated time step.
     """
     forces = GRAVITY * MASS
-    forces += thrust(time) * np.array([np.sin(rotation), np.cos(rotation)])
+    forces += engine.thrust(time) * np.array([np.sin(rotation), np.cos(rotation)])
     forces += get_drag_factor(drag_brake_angle, is_estimation) * -(velocity**2) * np.sign(velocity)
 
     acceleration = (forces / MASS)
