@@ -1,8 +1,9 @@
 """Constants and settings used throught the simulator.
 """
 import numpy as np
+# from scipy.constants import g
 
-GRAVITY = np.array([0, -9.8])
+GRAVITY = np.array([0, -9.8]) # TODO use scipy.constants for gravity
 BARO_STD = 0.3  # Baro altitude sensor stddev (m)
 ACCEL_STD = 0.1  # Accelerometer sensor stddev (m/s^2)
 MAX_SERVO_SLEW_RATE = np.pi * 2 # rad/s
