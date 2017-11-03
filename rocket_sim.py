@@ -13,6 +13,7 @@ from my_kalman import kfilter
 
 import compat
 from engparser import NARThrustParser
+from pid import PIDTargetController
 from utils import eng_filename_argv
 from const import (
     GRAVITY,
@@ -141,29 +142,6 @@ def accel_model(acceleration, rotation):
     est_accels.append(np.random.normal(accel_vector, ACCEL_STD))
     return est_accels.pop(0)
 
-def get_rocket_command(time, est_position, est_velocity, rotation, drag_brake_angle):
-    """Runs PID controller and returns commanded drag brake angle.
-    """
-    global previous_error
-    global integrated_error
-
-    # print('est_position:', est_position, 'est_velocity (m/s):', est_velocity)
-
-    error = estimate_peak_altitude(est_position, est_velocity, drag_brake_angle) - TARGET_APOGEE
-
-    error_values.append(error)
-    time_values.append(time)
-
-    integrated_error += error
-    derivative_error = (error - previous_error)/CMD_PERIOD
-
-    previous_error = error
-
-    new_drag_brake_rate = KP*error + KI*integrated_error + KD*derivative_error
-
-    return new_drag_brake_rate
-
-
 # Main simulation loop
 def sim():
 
@@ -178,13 +156,17 @@ def sim():
     acceleration = np.array([0., 0.])
     # est_position = 0
 
+    pid = PIDTargetController(TARGET_APOGEE, KP, KI)
     while True:
-
         # previous_est_position = np.copy(est_position)
 
+        # Runs PID controller and returns commanded drag brake angle.
         # Actuate drag brakes if rocket is coasting
-        rate_cmd = get_rocket_command(time, np.array([0, kfilter.x[0]]),
-                                      np.array([0, kfilter.x[1]]), rotation, servo_angle)
+        error = estimate_peak_altitude(np.array([0, kfilter.x[0]]),
+                                       np.array([0, kfilter.x[1]]), servo_angle)
+        time_values.append(time)
+
+        rate_cmd = pid.tck(time, error)
         servo_angle = actuate(rate_cmd, servo_angle)
 
         sim_time_end = time + CMD_PERIOD - STEP_SIZE/2
@@ -217,36 +199,39 @@ def sim():
 
         if position[1] < 0:
             break
+    pid.figure()
 
 sim()
 
 print('Peak altitude (m):', max(altitude_values))
 print('Flight time (sec):', max(altitude_time_values))
 
-plt.subplot(5, 1, 1)
-plt.plot(altitude_time_values, altitude_values)
-plt.plot(altitude_time_values, kalman_altitude_values)
+truth_label = 'Truth'
+kf_label = 'KF estimation'
+
+plt.figure('Simulation Outcomes')
+plt.subplot(4, 1, 1)
+plt.plot(altitude_time_values, altitude_values, label=truth_label)
+plt.plot(altitude_time_values, kalman_altitude_values, label=kf_label)
 plt.ylabel('Altitude (m)')
 plt.xlabel('Time (s)')
+plt.legend()
 
-plt.subplot(5, 1, 2)
-plt.plot(altitude_time_values, velocity_values)
-plt.plot(altitude_time_values, kalman_velocity_values)
+plt.subplot(4, 1, 2)
+plt.plot(altitude_time_values, velocity_values, label=truth_label)
+plt.plot(altitude_time_values, kalman_velocity_values, label=kf_label)
 plt.ylabel('Velocity (m/s)')
 plt.xlabel('Time (s)')
+plt.legend()
 
-plt.subplot(5, 1, 3)
-plt.plot(altitude_time_values, accel_values)
-plt.plot(altitude_time_values, kalman_accel_values)
+plt.subplot(4, 1, 3)
+plt.plot(altitude_time_values, accel_values, label=truth_label)
+plt.plot(altitude_time_values, kalman_accel_values, label=kf_label)
 plt.ylabel('Acceleration (m/s^2)')
 plt.xlabel('Time (s)')
+plt.legend()
 
-plt.subplot(5, 1, 4)
-plt.plot(time_values, error_values)
-plt.ylabel('PID error (m)')
-plt.xlabel('Time (s)')
-
-plt.subplot(5, 1, 5)
+plt.subplot(4, 1, 4)
 plt.plot(time_values, servo_angle_values)
 plt.ylabel('Servo Angle (degrees)')
 plt.xlabel('Time (s)')
