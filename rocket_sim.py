@@ -28,12 +28,13 @@ from params import (
     KP, KI, KD,
     DRAG_FACTOR,
     ES_DRAG_FACTOR,
-    DRAG_GAIN
+    DRAG_GAIN,
+    THRUST_SCALE
 )
 
 # Supply .eng thrust file via command args
 with open(validate_engine_file(sys.argv)) as f:
-    engine = RocketEngine(f)
+    engine = RocketEngine(f, THRUST_SCALE)
 
 
 # Global vars

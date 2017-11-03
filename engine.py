@@ -12,7 +12,7 @@ class RocketEngine:
 
     @property
     def _data_tuple(self):
-        return self._tdata
+        return self._thrust_data
 
     @property
     def raw_times(self):
@@ -20,10 +20,10 @@ class RocketEngine:
 
     @property
     def raw_thrusts(self):
-        return tuple(x[1]*self.thrust_scl for x in self._data_tuple)
+        return tuple(x[1]*self.thrust_scale for x in self._data_tuple)
 
     # Get engine thrust at a specified time
     def thrust(self, time):
         # Raw thrust values plus interpolation
-        return np.interp(x, self.raw_time, ntp.raw_thrusts, right=0)
+        return np.interp(time, self.raw_times, self.raw_thrusts, right=0)
 
