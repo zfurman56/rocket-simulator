@@ -1,4 +1,4 @@
-from const import THRUST_SCALE
+from params import THRUST_SCALE
 
 class NARThrustParser:
     def __init__(self, eng_file, thrust_scl=THRUST_SCALE):

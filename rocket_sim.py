@@ -15,7 +15,7 @@ import compat
 from engparser import NARThrustParser
 from pid import PIDController
 from utils import eng_filename_argv
-from const import (
+from params import (
     GRAVITY,
     BARO_STD,
     ACCEL_STD,
