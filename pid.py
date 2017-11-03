@@ -1,39 +1,41 @@
 from matplotlib import pyplot as plt
 
-class PIDTargetController:
-    time_vals = []
-    est_trg = []
-    last_err = 0
+# TODO: Better documentation for this class
+class PIDController:
+    times = []
+    errors = []
 
-    def __init__(self, target, k, tau_i): # tau_i (sec/repeat)
-        self._trg = target
-        self._err = lambda x: x - target
-        self.k = k
-        self.tau_i = tau_i
+    def __init__(self, target, kp, ki, kd):
+        self._target = target
+        self._error = lambda x: x - target
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
 
-    def tck(self, time, est_trg):
-        self.time_vals.append(time)
-        self.est_trg.append(est_trg)
-        err = self._err(est_trg)
-        return self._p(err) + self._id(err)
+    def update(self, time, control_input, process_state):
+        self.times.append(time)
+        error = self._error(process_state)
+        self.errors.append(error)
 
-    def _p(self, err):
-        return self.k * err
+        if (len(self.times) > 1):
+            return control_input + self._p(error) + self._i(error) + self._d(error)
+        else:
+            return control_input
 
-    def _id(self, err):
-        try:
-            ki = self.k / self.tau_i
-            id = ki * (err - self.last_err)
-            self.last_err = err
-            return id
-        except ZeroDivisionError:
-            pass # Don't do anything if tau_i is 0
+    def _p(self, error):
+        return self.kp * error
+
+    def _i(self, error):
+        return self.ki * sum(self.errors)
+
+    def _d(self, error):
+        # rate of change between the past two errors
+        derivative = ((self.errors[-1]-self.errors[-2]) / (self.times[-1]-self.times[-2]))
+        return self.kd * derivative
 
     def figure(self):
         plt.figure('PID Controller')
-        plt.plot(self.time_vals, [self._trg]*len(self.time_vals), label='Target')
-        plt.plot(self.time_vals, self.est_trg, label='Estimation')
-        plt.ylabel('Target (m)')
+        plt.plot(self.times, self.errors)
+        plt.ylabel('Error (m)')
         plt.xlabel('Time (s)')
-        plt.legend()
         #  Do not show figures

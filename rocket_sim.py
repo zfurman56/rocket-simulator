@@ -13,7 +13,7 @@ from my_kalman import kfilter
 
 import compat
 from engparser import NARThrustParser
-from pid import PIDTargetController
+from pid import PIDController
 from utils import eng_filename_argv
 from const import (
     GRAVITY,
@@ -64,10 +64,11 @@ def get_drag_factor(drag_brake_angle, is_estimation):
         return ES_DRAG_FACTOR * vel
     return DRAG_FACTOR * vel
 
-def actuate(commanded_brake_rate, current_angle):
+def actuate(commanded_brake_angle, current_angle):
     """Takes a slew rate for the drag brakes, clamps it,
     and uses it to compute the new brake angle.
     """
+    commanded_brake_rate = commanded_brake_angle-current_angle
     slew_rate = commanded_brake_rate / CMD_PERIOD
     clamped_slew_rate = np.clip(slew_rate, -MAX_SERVO_SLEW_RATE, MAX_SERVO_SLEW_RATE)
     new_angle = np.clip((current_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
@@ -156,18 +157,22 @@ def sim():
     acceleration = np.array([0., 0.])
     # est_position = 0
 
-    pid = PIDTargetController(TARGET_APOGEE, KP, KI)
+    pid = PIDController(TARGET_APOGEE, KP, KI, KD)
+
     while True:
         # previous_est_position = np.copy(est_position)
 
         # Runs PID controller and returns commanded drag brake angle.
         # Actuate drag brakes if rocket is coasting
-        error = estimate_peak_altitude(np.array([0, kfilter.x[0]]),
+        est_apogee = estimate_peak_altitude(np.array([0, kfilter.x[0]]),
                                        np.array([0, kfilter.x[1]]), servo_angle)
         time_values.append(time)
 
-        rate_cmd = pid.tck(time, error)
-        servo_angle = actuate(rate_cmd, servo_angle)
+        # Get the attempted servo command from the PID controller.
+        # This may not end up being the actual servo angle, because
+        # the servo can only move so fast
+        desired_angle = pid.update(time, servo_angle, est_apogee)
+        servo_angle = actuate(desired_angle, servo_angle)
 
         sim_time_end = time + CMD_PERIOD - STEP_SIZE/2
         first = True
