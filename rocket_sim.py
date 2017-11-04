@@ -170,7 +170,7 @@ def sim():
         # Get the attempted servo command from the PID controller.
         # This may not end up being the actual servo angle, because
         # the servo can only move so fast
-        desired_angle = pid.update(time, servo_angle, est_apogee)
+        desired_angle = servo_angle + pid.update(time, est_apogee)
         servo_angle = actuate(desired_angle, servo_angle)
 
         sim_time_end = time + CMD_PERIOD - STEP_SIZE/2
