@@ -1,9 +1,7 @@
 import numpy as np
 
 class RocketEngine:
-    """
-    Models rocket engine using an NAR thrust curve.
-
+    """Models rocket engine using an NAR thrust curve.
     """
     def __init__(self, eng_file, thrust_scale):
         self.thrust_scale = thrust_scale
@@ -26,4 +24,3 @@ class RocketEngine:
     def thrust(self, time):
         # Raw thrust values plus interpolation
         return np.interp(time, self.raw_times, self.raw_thrusts, right=0)
-
