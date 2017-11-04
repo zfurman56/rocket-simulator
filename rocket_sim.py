@@ -9,7 +9,7 @@ closed-loop PID controller.
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from my_kalman import kfilter
+from kalman.impl import kfilter
 
 import compat
 from engine import RocketEngine

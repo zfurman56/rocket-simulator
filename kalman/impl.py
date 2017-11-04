@@ -1,5 +1,5 @@
 import numpy as np
-from kalman import KalmanFilter
+from main import KalmanFilter
 
 dt = 0.00416666666
 
