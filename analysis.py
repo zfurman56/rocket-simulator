@@ -1,18 +1,24 @@
-"""Drag brake curve-fitting tool
+"""
+Drag brake curve-fitting tool
 
 Fits drag brake angle vs CdA to a cubic function, allowing
 drag estimation given brake angle.
+
 """
+
 import numpy as np
 from matplotlib import pyplot as plt
 
 import compat
 
+
 def to_rad(angle):
-    return angle*(np.pi/180)
+    return angle * (np.pi / 180)
+
 
 def poly(coefs):
-    return lambda x: ((coefs[0]*(x**3)) + (coefs[1]*(x**2)) + (coefs[2]*x) + coefs[3])
+    return lambda x: ((coefs[0] * (x**3)) + (coefs[1] * (x**2)) + (coefs[2] * x) + coefs[3])
+
 
 drag_brake_values = [0, 15, 30, 45, 60, 75, 90]
 cda_values = [17.96, 26.38, 49.39, 80.82, 112.24, 135.25, 143.67]

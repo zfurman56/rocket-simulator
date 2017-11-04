@@ -53,19 +53,25 @@ altitude_values = []
 velocity_values = []
 accel_values = []
 
+
 def get_drag_factor(drag_brake_angle, is_estimation):
-    """Map from drag brake angle to drag force
+    """
+    Map from drag brake angle to drag force
     drag_brake_angle: (rad)
     returns: velocity (m/s)
+
     """
     vel = 1 + DRAG_GAIN * np.sin(drag_brake_angle)**2
     if is_estimation:
         return ES_DRAG_FACTOR * vel
     return DRAG_FACTOR * vel
 
+
 def actuate(commanded_brake_angle, current_angle):
-    """Takes a slew rate for the drag brakes, clamps it,
+    """
+    Takes a slew rate for the drag brakes, clamps it,
     and uses it to compute the new brake angle.
+
     """
     commanded_brake_rate = commanded_brake_angle-current_angle
     slew_rate = commanded_brake_rate / CMD_PERIOD
@@ -74,8 +80,11 @@ def actuate(commanded_brake_angle, current_angle):
     servo_angle_values.append((new_angle*(180/np.pi)))
     return new_angle
 
+
 def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation):
-    """Computes one simulated time step.
+    """
+    Computes one simulated time step.
+
     """
     forces = GRAVITY * MASS
     forces += engine.thrust(time) * np.array([np.sin(rotation), np.cos(rotation)])
@@ -92,29 +101,38 @@ def sim_step(time, position, velocity, rotation, drag_brake_angle, is_estimation
 
     return (time, new_position, new_velocity, rotation, acceleration)
 
+
 def estimate_peak_altitude(position, velocity, drag_brake_angle):
-    """Estimates apogee altitude with given parameters.
+    """
+    Estimates apogee altitude with given parameters.
+
     """
     term_vel_sqrd = (MASS * -GRAVITY[1]) / get_drag_factor(drag_brake_angle, True)
     return position[1] + (term_vel_sqrd / (2 * -GRAVITY[1]) *
                           np.log((velocity[1]**2 + term_vel_sqrd) / term_vel_sqrd))
+
 
 # Used as buffer, to simulate delay in baro and GPSs
 est_positions = []
 # est_velocities = [0]*2
 est_accels = []
 
+
 def baro_model(position):
     est_positions.append(np.random.normal(position[1], BARO_STD))
     return est_positions.pop(0)
 
+
 def accel_model(acceleration, rotation):
-    """"Acceleration vector projected to rotation.
+    """"
+    Acceleration vector projected to rotation.
+
     """
     accel_vector = np.cos(np.arctan2(acceleration[0],
                                      acceleration[1])-rotation) * np.linalg.norm(acceleration)
     est_accels.append(np.random.normal(accel_vector, ACCEL_STD))
     return est_accels.pop(0)
+
 
 # Main simulation loop
 def sim():
@@ -122,11 +140,11 @@ def sim():
     global altitude_values, velocity_values, altitude_time_values
 
     # State vars
-    time = -5. #seconds
+    time = -5.  # seconds
     servo_angle = 0  # Brake angle (rad)
-    position = np.array([0., 0.]) #meters
-    rotation = 0.0 #radians
-    velocity = np.array([0., 0.]) #meters/second
+    position = np.array([0., 0.])  # meters
+    rotation = 0.0  # radians
+    velocity = np.array([0., 0.])  # meters/second
     acceleration = np.array([0., 0.])
     # est_position = 0
 
@@ -137,8 +155,8 @@ def sim():
 
         # Runs PID controller and returns commanded drag brake angle.
         # Actuate drag brakes if rocket is coasting
-        est_apogee = estimate_peak_altitude(np.array([0, kfilter.x[0]]),
-                                       np.array([0, kfilter.x[1]]), servo_angle)
+        est_apogee = estimate_peak_altitude(
+            np.array([0, kfilter.x[0]]), np.array([0, kfilter.x[1]]), servo_angle)
         time_values.append(time)
 
         # Get the attempted servo command from the PID controller.
@@ -178,6 +196,7 @@ def sim():
         if position[1] < 0:
             break
     pid.figure()
+
 
 sim()
 

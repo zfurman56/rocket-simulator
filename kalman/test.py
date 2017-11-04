@@ -2,6 +2,7 @@ from impl import kfilter
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 time = 0
 accel = -5
 position = 0
@@ -14,6 +15,7 @@ velocity_values = []
 kalman_velocity_values = []
 accel_values = []
 kalman_accel_values = []
+
 for i in range(160):
     for i2 in range(12):
 
@@ -35,7 +37,6 @@ for i in range(160):
         kalman_velocity_values.append(kfilter.x[1]-velocity)
         accel_values.append(accel)
         kalman_accel_values.append(kfilter.x[2])
-
 
 plt.subplot(3, 1, 1)
 plt.plot(time_values, kalman_altitude_values)
