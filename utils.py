@@ -1,4 +1,7 @@
-import compat
+from sys import argv
+
+from engine import RocketEngine
+from params import THRUST_SCALE
 
 def help():
     return \
@@ -13,3 +16,7 @@ def validate_engine_file(argv):
     assert filename.endswith('.eng'), \
         '{} is not an supported NAR Thrust file.\n\n{}'.format(filename, help())
     return filename
+
+def get_eng_file_from_argv():
+    with open(validate_engine_file(argv)) as f:
+        return RocketEngine(f, THRUST_SCALE)

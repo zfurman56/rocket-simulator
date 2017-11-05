@@ -52,14 +52,14 @@ class PIDController:
         derivative = ((self.errors[-1]-self.errors[-2]) / (self.times[-1]-self.times[-2]))
         return self.deriv_gain * derivative
 
-    def figure(self):
+    def figure(self, title=None):
         """Plot the residuals of the process value and the target.
         Invoke `pyplot.show()` for the figure to be shown.
 
         Math:
             err = estimation - target
         """
-        plt.figure('PID Controller Error')
+        plt.figure(title or 'PID Controller Error')
         plt.plot(self.times, self.errors)
         plt.ylabel('Error (m)')
         plt.xlabel('Time (s)')
