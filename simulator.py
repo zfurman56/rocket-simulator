@@ -121,8 +121,3 @@ class Simulator(SimulatorState):
         self.altitude = self.altitude + self.velocity * SIM_TIME_INC + 0.5 * self.acceleration * SIM_TIME_INC**2
         self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
 
-if __name__ == '__main__':
-    sim = Simulator()
-    sim.simulate()
-    sim.plot()
-    plt.show()
