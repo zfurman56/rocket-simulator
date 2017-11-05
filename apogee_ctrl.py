@@ -35,6 +35,7 @@ class ApogeeSimulator(Simulator):
 
         dt = 0.00416666666
         self._eng = engine
+        self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
 
         self.kf = KalmanFilter(dim_x=3, dim_z=1)
         self.kf.x = np.array([0., 0., 0.])                                          # initial state (position, velocity, and acceleration)
@@ -99,7 +100,6 @@ class ApogeeSimulator(Simulator):
         return np.clip((self.brake_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
 
     def simulate(self):
-        pid = PIDController(TARGET_APOGEE, KP, KI, KD)
         while not self.terminated:
             # Runs PID controller and returns commanded drag brake angle.
             # Actuate drag brakes if rocket is coasting
@@ -108,7 +108,7 @@ class ApogeeSimulator(Simulator):
             # Get the attempted servo command from the PID controller.
             # This may not end up being the actual servo angle, because
             # the servo can only move so fast
-            brake_angle = self._actuate(self.brake_angle + pid.update(self.time, est_apogee))
+            brake_angle = self._actuate(self.brake_angle + self.pid.update(self.time, est_apogee))
 
             # TODO rewrite this portion; slight messy.
             sim_time_end = self.time + CMD_PERIOD - SIM_TIME_INC/2
@@ -135,7 +135,6 @@ class ApogeeSimulator(Simulator):
                 # Increment the time
                 self.time += SIM_TIME_INC
 
-        pid.figure('Apogee PID Controller Error')
         self._print_results()
 
 
@@ -150,6 +149,9 @@ class ApogeeSimulator(Simulator):
         return forces
 
     def plot(self, title=None):
+        # create PID graph
+        self.pid.figure('Apogee PID Controller Error')
+
         kf_label = 'KF estimation'
 
         plt.figure(title or 'Simulation Outcomes')
