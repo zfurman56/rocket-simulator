@@ -1,5 +1,7 @@
 from matplotlib import pyplot as plt
 
+
+# TODO: Better documentation for this class
 class PIDController:
     """PID Controller.
     """

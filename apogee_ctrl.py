@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from simulator import Simulator
 from pid import PIDController
-from kf import KalmanFilter
+from kalman.kf import KalmanFilter
 from utils import get_eng_file_from_argv
 from params import (
     GRAVITY,

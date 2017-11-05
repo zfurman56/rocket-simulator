@@ -3,11 +3,13 @@ from sys import argv
 from engine import RocketEngine
 from params import THRUST_SCALE
 
+
 def help():
     return \
-    """Rocket Simulator for use in TARC 2018.
-    Usage: python rocket_sim.py eng_file
-    """
+           """Rocket Simulator for use in TARC 2018.
+           Usage: python rocket_sim.py eng_file
+           """
+
 
 def validate_engine_file(argv):
     assert len(argv) > 1, 'Incorrect arguments.\n\n{}'.format(help())
