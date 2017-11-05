@@ -7,7 +7,6 @@ closed-loop PID controller.
 import numpy as np
 from matplotlib import pyplot as plt
 
-from utils import get_eng_file_from_argv
 from params import GRAVITY, MASS, SIM_TIME_INC, DRAG_FACTOR, DRAG_GAIN
 
 
@@ -65,9 +64,6 @@ class SimulatorState(object): # MUST extend object for py2 compat
 class Simulator(SimulatorState):
     terminated = False
 
-    def __init__(self, engine):
-        self._eng = engine
-
     def plot(self, title=None):
         plt.figure(title or 'Simulation Outcomes')
         plt.subplot(3, 1, 1)
@@ -100,8 +96,6 @@ class Simulator(SimulatorState):
         # Add Engine thrust and attitude to forces
         # Gravitational force
         forces = MASS * GRAVITY
-        # Thrust and rotation
-        forces += self._eng.thrust(self.time) * np.array([0, 1])
         # Air drag
         forces += DRAG_FACTOR * (1 + DRAG_GAIN) * -self.velocity**2 * np.sign(self.velocity)
         return forces
@@ -128,7 +122,7 @@ class Simulator(SimulatorState):
         self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
 
 if __name__ == '__main__':
-    sim = Simulator(get_eng_file_from_argv())
+    sim = Simulator()
     sim.simulate()
     sim.plot()
     plt.show()

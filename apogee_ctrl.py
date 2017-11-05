@@ -31,8 +31,11 @@ class ApogeeSimulator(Simulator):
     kalman_accel_values = [0.] # meters/second^2
 
     def __init__(self, engine):
-        super(ApogeeSimulator, self).__init__(engine)
+        super(ApogeeSimulator, self).__init__()
+
         dt = 0.00416666666
+        self._eng = engine
+
         self.kf = KalmanFilter(dim_x=3, dim_z=1)
         self.kf.x = np.array([0., 0., 0.])                                          # initial state (position, velocity, and acceleration)
         self.kf.F = np.array([[1., dt, 0.5*(dt**2)], [0., 1., dt], [0., 0., 1]])    # state transition matrix
