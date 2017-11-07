@@ -12,14 +12,21 @@ from kalman.kf import KalmanFilter
 
 
 class SimulatorState(object): # MUST extend object for py2 compat
-    start_time = -5. # seconds
-
     error_values = []
-    time_values = [start_time] # seconds
+    time_values = [-5.] # seconds
     altitude_values = [np.array([0., 0.])] # meters
     attitude_values = [0.] # radians
     velocity_values = [np.array([0., 0.])] # meters/second
     accel_values = [np.array([0., 0.])] # meters/seconds^2
+
+    def print_init_values(self):
+        # TODO check starting params exist
+        print('===== STARTING PARAMETERS ======')
+        print('START TIME::             {} seconds'.format(self.time_values[0]))
+        print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
+        # print('ATTITUDE::               {} radians'.format(self.attitude_values[0]))
+        print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
+        print('ACCELERATION::           {} m/s^2'.format(self.accel_values[0]))
 
     @property
     def time(self):
@@ -134,4 +141,3 @@ class Simulator(SimulatorState):
         # Cannot use += due to property decorator
         self.altitude = self.altitude + self.velocity * SIM_TIME_INC + 0.5 * self.acceleration * SIM_TIME_INC**2
         self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
-
