@@ -30,6 +30,7 @@ class ApogeeSimulator(Simulator):
     kalman_accel_values = [0.] # meters/second^2
 
     def __init__(self, engine):
+        super(ApogeeSimulator, self).__init__()
         self._eng = engine
         self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
 
