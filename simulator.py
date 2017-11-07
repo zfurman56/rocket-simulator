@@ -28,6 +28,36 @@ class SimulatorState(object): # MUST extend object for py2 compat
         print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
         print('ACCELERATION::           {} m/s^2'.format(self.accel_values[0]))
 
+    def _assert_init_values(self):
+        assert len(self.time_values)    == 1 and \
+            len(self.altitude_values)   == 1 and \
+            len(self.attitude_values)   == 1 and \
+            len(self.velocity_values)   == 1 and \
+            len(self.accel_values)      == 1, """
+            FATAL: either there was a continitiy error, the simulation
+            has started, or an intial value is not properly configured.
+            """
+
+    def mutate_init_time(self, time):
+        self._assert_init_values()
+        self.time_values[0] = time
+
+    def mutate_init_altitude(self, altitude):
+        self._assert_init_values()
+        self.altitude_values[0] = altitude
+
+    def mutate_init_attitude(self, attitude):
+        self._assert_init_values()
+        self.attitude_values[0] = attitude
+
+    def mutate_init_velocity(self, velocity):
+        self._assert_init_values()
+        self.velocity_values[0] = velocity
+
+    def mutate_init_accerlation(self, accel):
+        self._assert_init_values()
+        self.accel_values[0] = accel
+
     @property
     def time(self):
         return self.time_values[-1]
