@@ -12,21 +12,35 @@ from kalman.kf import KalmanFilter
 
 
 class SimulatorState(object): # MUST extend object for py2 compat
-    error_values = []
-    time_values = [-5.] # seconds
-    altitude_values = [np.array([0., 0.])] # meters
-    attitude_values = [0.] # radians
-    velocity_values = [np.array([0., 0.])] # meters/second
-    accel_values = [np.array([0., 0.])] # meters/seconds^2
+    _init_time = -5.
+    _init_altitude = np.array([0., 0.])
+    _init_attitude = 0.
+    _init_velocity = np.array([0., 0.])
+    _init_acceleration = np.array([0., 0.])
+
+    def __init__(self):        
+        # Use properties decorator to assert that the sim
+        # has not started.
+        self.init_time = property(lambda x: self._init_time, self.init_time)
+        self.init_altitude = property(lambda x: self._init_altitude, self.init_altitude)
+        self.init_attitude = property(lambda x: self._init_attitude, self.init_attitude)
+        self.init_velocity = property(lambda x: self._init_velocity, self.init_velocity)
+        self.init_acceleration = property(lambda x: self._init_acceleration, self.init_acceleration)
+
+        self.time_values = [self._init_time] # seconds
+        self.altitude_values = [self._init_altitude] # meters
+        self.attitude_values = [self._init_attitude] # radians
+        self.velocity_values = [self._init_velocity] # meters/second
+        self.accel_values = [self._init_acceleration] # meters/seconds^2
 
     def print_init_values(self):
         # TODO check starting params exist
-        print('===== STARTING PARAMETERS ======')
-        print('START TIME::             {} seconds'.format(self.time_values[0]))
-        print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
-        # print('ATTITUDE::               {} radians'.format(self.attitude_values[0]))
-        print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
-        print('ACCELERATION::           {} m/s^2'.format(self.accel_values[0]))
+        print('===== INIT PARAMETERS ======')
+        print('TIME::                   {} seconds'.format(self._init_time))
+        print('ALTITUDE::               {} meters'.format(self._init_altitude))
+        # print('ATTITUDE::               {} radians'.format(self._init_attitude))
+        print('VELOCITY::               {} m/s'.format(self._init_velocity))
+        print('ACCELERATION::           {} m/s^2'.format(self._init_acceleration))
 
     def _assert_init_values(self):
         assert len(self.time_values)    == 1 and \
@@ -38,25 +52,25 @@ class SimulatorState(object): # MUST extend object for py2 compat
             has started, or an intial value is not properly configured.
             """
 
-    def mutate_init_time(self, time):
+    def init_time(self, time):
         self._assert_init_values()
-        self.time_values[0] = time
+        self._init_time = time
 
-    def mutate_init_altitude(self, altitude):
+    def init_altitude(self, altitude):
         self._assert_init_values()
-        self.altitude_values[0] = altitude
+        self._init_altitude = altitude
 
-    def mutate_init_attitude(self, attitude):
+    def init_attitude(self, attitude):
         self._assert_init_values()
-        self.attitude_values[0] = attitude
+        self._init_attitude = attitude
 
-    def mutate_init_velocity(self, velocity):
+    def init_velocity(self, velocity):
         self._assert_init_values()
-        self.velocity_values[0] = velocity
+        self._init_velocity = velocity
 
-    def mutate_init_accerlation(self, accel):
+    def init_acceleration(self, accel):
         self._assert_init_values()
-        self.accel_values[0] = accel
+        self._init_acceleration = accel
 
     @property
     def time(self):
@@ -103,6 +117,7 @@ class Simulator(SimulatorState):
     terminated = False
 
     def __init__(self):
+        super(Simulator, self).__init__()
         dt = 0.00416666666
 
         self.kf = KalmanFilter(dim_x=3, dim_z=1)
