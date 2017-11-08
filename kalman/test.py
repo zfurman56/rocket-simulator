@@ -1,7 +1,11 @@
-from impl import kfilter
+# Adds parent package as a module; allows calling this module
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
+from simulator import Simulator
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 time = 0
 accel = -5
@@ -15,6 +19,8 @@ velocity_values = []
 kalman_velocity_values = []
 accel_values = []
 kalman_accel_values = []
+
+kfilter = Simulator().kf
 
 for i in range(160):
     for i2 in range(12):
