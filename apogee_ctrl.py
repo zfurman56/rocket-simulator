@@ -155,7 +155,7 @@ class ApogeeSimulator(Simulator):
         plt.legend()
 
         plt.subplot(4, 1, 3)
-        plt.plot(self.time_values, [x[1] for x in self.accel_values], label='Acceleration')
+        plt.plot(self.time_values, [x[1] for x in self.acceleration_values], label='Acceleration')
         plt.plot(self.time_values, self.kalman_accel_values, label=kf_label)
         plt.ylabel('Acceleration (m/s^2)')
         plt.legend()

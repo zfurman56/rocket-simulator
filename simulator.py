@@ -12,65 +12,19 @@ from kalman.kf import KalmanFilter
 
 
 class SimulatorState(object): # MUST extend object for py2 compat
-    _init_time = -5.
-    _init_altitude = np.array([0., 0.])
-    _init_attitude = 0.
-    _init_velocity = np.array([0., 0.])
-    _init_acceleration = np.array([0., 0.])
-
-    def __init__(self):        
-        # Use properties decorator to assert that the sim
-        # has not started.
-        self.init_time = property(lambda x: self._init_time, self.init_time)
-        self.init_altitude = property(lambda x: self._init_altitude, self.init_altitude)
-        self.init_attitude = property(lambda x: self._init_attitude, self.init_attitude)
-        self.init_velocity = property(lambda x: self._init_velocity, self.init_velocity)
-        self.init_acceleration = property(lambda x: self._init_acceleration, self.init_acceleration)
-
-        self.time_values = [self._init_time] # seconds
-        self.altitude_values = [self._init_altitude] # meters
-        self.attitude_values = [self._init_attitude] # radians
-        self.velocity_values = [self._init_velocity] # meters/second
-        self.accel_values = [self._init_acceleration] # meters/seconds^2
+    time_values = [-5.] # seconds
+    altitude_values = [np.array([0., 0.])] # meters
+    attitude_values = [0.] # radians
+    velocity_values = [np.array([0., 0.])] # meters/second
+    acceleration_values = [np.array([0., 0.])] # meters/seconds^2
 
     def print_init_values(self):
-        # TODO check starting params exist
         print('===== INIT PARAMETERS ======')
-        print('TIME::                   {} seconds'.format(self._init_time))
-        print('ALTITUDE::               {} meters'.format(self._init_altitude))
-        # print('ATTITUDE::               {} radians'.format(self._init_attitude))
-        print('VELOCITY::               {} m/s'.format(self._init_velocity))
-        print('ACCELERATION::           {} m/s^2'.format(self._init_acceleration))
-
-    def _assert_init_values(self):
-        assert len(self.time_values)    == 1 and \
-            len(self.altitude_values)   == 1 and \
-            len(self.attitude_values)   == 1 and \
-            len(self.velocity_values)   == 1 and \
-            len(self.accel_values)      == 1, """
-            FATAL: either there was a continitiy error, the simulation
-            has started, or an intial value is not properly configured.
-            """
-
-    def init_time(self, time):
-        self._assert_init_values()
-        self._init_time = time
-
-    def init_altitude(self, altitude):
-        self._assert_init_values()
-        self._init_altitude = altitude
-
-    def init_attitude(self, attitude):
-        self._assert_init_values()
-        self._init_attitude = attitude
-
-    def init_velocity(self, velocity):
-        self._assert_init_values()
-        self._init_velocity = velocity
-
-    def init_acceleration(self, accel):
-        self._assert_init_values()
-        self._init_acceleration = accel
+        print('TIME::                   {} seconds'.format(self.time_values[0]))
+        print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
+        # print('ATTITUDE::               {} radians'.format(self.attitude_values[0]))
+        print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
+        print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[0]))
 
     @property
     def time(self):
@@ -106,18 +60,17 @@ class SimulatorState(object): # MUST extend object for py2 compat
 
     @property
     def acceleration(self):
-        return self.accel_values[-1]
+        return self.acceleration_values[-1]
 
     @acceleration.setter
     def acceleration(self, a):
-        self.accel_values.append(a)
+        self.acceleration_values.append(a)
 
 
 class Simulator(SimulatorState):
     terminated = False
 
     def __init__(self):
-        super(Simulator, self).__init__()
         dt = 0.00416666666
 
         self.kf = KalmanFilter(dim_x=3, dim_z=1)
@@ -141,7 +94,7 @@ class Simulator(SimulatorState):
         plt.ylabel('Velocity (m/s)')
 
         plt.subplot(3, 1, 3)
-        plt.plot(self.time_values, [x[1] for x in self.accel_values], label='Acceleration')
+        plt.plot(self.time_values, [x[1] for x in self.acceleration_values], label='Acceleration')
         plt.ylabel('Acceleration (m/s^2)')
         plt.xlabel('Time (s)')
 
