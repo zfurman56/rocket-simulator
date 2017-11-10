@@ -23,6 +23,7 @@ class SimulatorState(object): # MUST extend object for py2 compat
     acceleration_values = [np.array([0., 0.])] # meters/seconds^2
 
     def print_init_values(self):
+        print('')
         print('===== INIT PARAMETERS ======')
         print('TIME::                   {} seconds'.format(self.time_values[0]))
         print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
@@ -31,6 +32,8 @@ class SimulatorState(object): # MUST extend object for py2 compat
         print('ROLL::                   {} radians'.format(self.roll_values[0]))
         print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
         print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[0]))
+        print('============================')
+        print('')
 
     @property
     def time(self):
@@ -91,6 +94,21 @@ class SimulatorState(object): # MUST extend object for py2 compat
 
 class Simulator(SimulatorState):
     terminated = False
+
+    def print_final_values(self):
+        assert self.terminated, 'The simulation has not terminated; cannot print final values.'
+
+        print('')
+        print('===== FINAL PARAMETERS ======')
+        print('TIME::                   {} seconds'.format(self.time_values[-1]))
+        print('ALTITUDE::               {} meters'.format(self.altitude_values[-1]))
+        print('PITCH::                  {} radians'.format(self.pitch_values[-1]))
+        print('YAW::                    {} radians'.format(self.yaw_values[-1]))
+        print('ROLL::                   {} radians'.format(self.roll_values[-1]))
+        print('VELOCITY::               {} m/s'.format(self.velocity_values[-1]))
+        print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[-1]))
+        print('=============================')
+        print('')
 
     def plot(self, title=None):
         plt.figure(title or 'Simulation Outcomes')

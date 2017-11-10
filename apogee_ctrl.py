@@ -139,4 +139,5 @@ if __name__ == '__main__':
     sim = ApogeeSimulator(get_eng_file_from_argv())
     sim.print_init_values()
     sim.simulate()
+    sim.print_final_values()
     sim.plot('Apogee Simulation Results').show()
