@@ -49,6 +49,13 @@ class ApogeeSimulator(KFSimulator):
         clamped_slew_rate = np.clip(slew_rate, -MAX_SERVO_SLEW_RATE, MAX_SERVO_SLEW_RATE)
         return np.clip((self.brake_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
 
+    def _accelerometer_model(self, acceleration):
+        """
+        Accelerometer sensor model
+        """
+        accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1])) * np.linalg.norm(acceleration)
+        return np.random.normal(accel_vector, ACCEL_STD)
+
     def simulate(self):
         while not self.terminated:
             # Runs PID controller and returns commanded drag brake angle.
@@ -67,13 +74,12 @@ class ApogeeSimulator(KFSimulator):
                 self.brake_angle = brake_angle
                 self.tick()
 
-                sum_accel = self.acceleration - GRAVITY
-                est_accel = np.random.normal(np.cos(np.arctan2(sum_accel[0], sum_accel[1])) * np.linalg.norm(sum_accel), ACCEL_STD)
                 self.kf.predict()
                 if first:
-                    self.kf.update(np.array([np.random.normal(self.altitude[1], BARO_STD), est_accel + GRAVITY[1]]))
+                    # Barometer sensor inline
+                    self.kf.update(np.array([np.random.normal(self.altitude[1], BARO_STD), self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
                 else:
-                    self.kf.update2(np.array([est_accel + GRAVITY[1]]))
+                    self.kf.update2(np.array([self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
 
                 first = False
 
