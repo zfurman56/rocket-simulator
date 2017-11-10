@@ -53,7 +53,7 @@ class ApogeeSimulator(KFSimulator):
         """
         Accelerometer sensor model
         """
-        accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1])) * np.linalg.norm(acceleration)
+        accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1]) - self.pitch) * np.linalg.norm(acceleration)
         return np.random.normal(accel_vector, ACCEL_STD)
 
     def simulate(self):
@@ -93,13 +93,12 @@ class ApogeeSimulator(KFSimulator):
 
         self._print_results()
 
-
     def _calculate_forces(self):
         # Add Engine thrust and attitude to forces
         # Gravitational force
         forces = MASS * GRAVITY
         # Thrust and rotation
-        forces += self._eng.thrust(self.time) * np.array([0, 1])
+        forces += self._eng.thrust(self.time) * np.array([np.sin(self.pitch), np.cos(self.pitch)])
         # Air drag
         forces += self._get_drag_factor(self.brake_angle) * -self.velocity**2 * np.sign(self.velocity)
         return forces
@@ -133,6 +132,7 @@ class ApogeeSimulator(KFSimulator):
         plt.plot(self.time_values, [np.rad2deg(x) for x in self.brake_angles])
         plt.ylabel('Servo Angle (degrees)')
         plt.xlabel('Time (s)')
+
         return plt
 
 if __name__ == '__main__':

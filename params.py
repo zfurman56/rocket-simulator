@@ -42,3 +42,7 @@ DRAG_FACTOR = 0.00185
 DRAG_GAIN = 10
 
 THRUST_SCALE = 1.0
+
+# Length of the aluminium launch rod
+# Helps with rocket rotation
+ROD_LEN = 0

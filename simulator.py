@@ -7,14 +7,18 @@ closed-loop PID controller.
 import numpy as np
 from matplotlib import pyplot as plt
 
-from params import GRAVITY, MASS, SIM_TIME_INC, DRAG_FACTOR, DRAG_GAIN
+from params import GRAVITY, MASS, SIM_TIME_INC, DRAG_FACTOR, DRAG_GAIN, ROD_LEN
 from kalman.kf import KalmanFilter
 
 
 class SimulatorState(object): # MUST extend object for py2 compat
     time_values = [-5.] # seconds
     altitude_values = [np.array([0., 0.])] # meters
-    attitude_values = [0.] # radians
+    # See https://spaceflightsystems.grc.nasa.gov/education/rocket/rotations.html
+    # for more information about attitude of rocket
+    pitch_values = [0.] # radians
+    yaw_values = [0.] # radians
+    roll_values = [0.] # radians
     velocity_values = [np.array([0., 0.])] # meters/second
     acceleration_values = [np.array([0., 0.])] # meters/seconds^2
 
@@ -22,7 +26,9 @@ class SimulatorState(object): # MUST extend object for py2 compat
         print('===== INIT PARAMETERS ======')
         print('TIME::                   {} seconds'.format(self.time_values[0]))
         print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
-        # print('ATTITUDE::               {} radians'.format(self.attitude_values[0]))
+        print('PITCH::                  {} radians'.format(self.pitch_values[0]))
+        print('YAW::                    {} radians'.format(self.yaw_values[0]))
+        print('ROLL::                   {} radians'.format(self.roll_values[0]))
         print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
         print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[0]))
 
@@ -43,12 +49,28 @@ class SimulatorState(object): # MUST extend object for py2 compat
         self.altitude_values.append(alt)
 
     @property
-    def attitude(self):
-        raise NotImplementedError('Attitude has not been implemented yet.')
+    def pitch(self):
+        return self.pitch_values[-1]
 
-    @attitude.setter
-    def attitude(self, att):
-        raise NotImplementedError('Attitude has not been implemented yet.')
+    @pitch.setter
+    def pitch(self, ptc):
+        self.pitch_values.append(ptc)
+
+    @property
+    def yaw(self):
+        return self.yaw_values[-1]
+
+    @yaw.setter
+    def yaw(self, yaw):
+        self.yaw_values.append(yaw)
+
+    @property
+    def roll(self):
+        return self.roll_values[-1]
+
+    @roll.setter
+    def roll(self, roll):
+        self.roll_values.append(roll)
 
     @property
     def velocity(self):
@@ -99,7 +121,7 @@ class Simulator(SimulatorState):
         print('Flight time (sec):', max(self.time_values))
 
     def _calculate_forces(self):
-        # Add Engine thrust and attitude to forces
+        # Add Engine thrust and pitch to forces
         # Gravitational force
         forces = MASS * GRAVITY
         # Air drag
@@ -126,6 +148,9 @@ class Simulator(SimulatorState):
         # Cannot use += due to property decorator
         self.altitude = self.altitude + self.velocity * SIM_TIME_INC + 0.5 * self.acceleration * SIM_TIME_INC**2
         self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
+
+        if np.linalg.norm(self.altitude) > ROD_LEN:
+            self.pitch = np.pi/2 - np.arctan2(self.velocity[1], self.velocity[0])
 
 
 class KFSimulator(Simulator):
