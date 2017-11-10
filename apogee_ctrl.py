@@ -5,7 +5,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from simulator import Simulator
+from simulator import KFSimulator
 from pid import PIDController
 from utils import get_eng_file_from_argv
 from params import (
@@ -23,48 +23,11 @@ from params import (
 )
 
 
-class ApogeeSimulator(Simulator):
-    brake_angles = [0.] # Servo angle values for drag brakes (rads)
-    kalman_altitude_values = [0.] # meters
-    kalman_velocity_values = [0.] # meters/second
-    kalman_accel_values = [0.] # meters/second^2
-
+class ApogeeSimulator(KFSimulator):
     def __init__(self, engine):
         super(ApogeeSimulator, self).__init__()
         self._eng = engine
         self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
-
-    @property
-    def brake_angle(self):
-        return self.brake_angles[-1]
-
-    @brake_angle.setter
-    def brake_angle(self, angle):
-        self.brake_angles.append(angle)
-
-    @property
-    def estimated_altitude(self):
-        return self.kalman_altitude_values[-1]
-
-    @estimated_altitude.setter
-    def estimated_altitude(self, alt):
-        self.kalman_altitude_values.append(alt)
-
-    @property
-    def estimated_velocity(self):
-        return self.kalman_velocity_values[-1]
-
-    @estimated_velocity.setter
-    def estimated_velocity(self, v):
-        self.kalman_velocity_values.append(v)
-
-    @property
-    def estimated_acceleration(self):
-        return self.kalman_accel_values[-1]
-
-    @estimated_acceleration.setter
-    def estimated_acceleration(self, a):
-        self.kalman_accel_values.append(a)
 
     def _get_drag_factor(self, brake_angle):
         """Map from drag brake angle to drag factor
@@ -156,7 +119,7 @@ class ApogeeSimulator(Simulator):
 
         plt.subplot(4, 1, 3)
         plt.plot(self.time_values, [x[1] for x in self.acceleration_values], label='Acceleration')
-        plt.plot(self.time_values, self.kalman_accel_values, label=kf_label)
+        plt.plot(self.time_values, self.kalman_acceleration_values, label=kf_label)
         plt.ylabel('Acceleration (m/s^2)')
         plt.legend()
 

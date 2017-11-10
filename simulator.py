@@ -70,19 +70,6 @@ class SimulatorState(object): # MUST extend object for py2 compat
 class Simulator(SimulatorState):
     terminated = False
 
-    def __init__(self):
-        dt = 0.00416666666
-
-        self.kf = KalmanFilter(dim_x=3, dim_z=1)
-        self.kf.x = np.array([0., 0., 0.])                                          # initial state (position, velocity, and acceleration)
-        self.kf.F = np.array([[1., dt, 0.5*(dt**2)], [0., 1., dt], [0., 0., 1]])    # state transition matrix
-        self.kf.H = np.array([[1., 0., 0.], [0., 0., 1.]])                          # Measurement function (baro)
-        self.kf.H2 = np.array([[0., 0., 1.]])                                       # Measurement function (accel)
-        self.kf.P *= 0.01                                                           # covariance matrix
-        self.kf.R = np.array([[0.5, 0.], [0., 0.2]])                                # state uncertainty (baro)
-        self.kf.R2 = np.array([[0.2]])                                              # state uncertainty (accel)
-        self.kf.Q = np.array([[0.02, 0., 0.], [0., 0.02, 0.], [0., 0., 0.02]])
-
     def plot(self, title=None):
         plt.figure(title or 'Simulation Outcomes')
         plt.subplot(3, 1, 1)
@@ -139,3 +126,55 @@ class Simulator(SimulatorState):
         # Cannot use += due to property decorator
         self.altitude = self.altitude + self.velocity * SIM_TIME_INC + 0.5 * self.acceleration * SIM_TIME_INC**2
         self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
+
+
+class KFSimulator(Simulator):
+    brake_angles = [0.] # Servo angle values for drag brakes (rads)
+    kalman_altitude_values = [0.] # meters
+    kalman_velocity_values = [0.] # meters/second
+    kalman_acceleration_values = [0.] # meters/second^2
+
+    def __init__(self):
+        dt = 0.00416666666
+
+        self.kf = KalmanFilter(dim_x=3, dim_z=1)
+        self.kf.x = np.array([0., 0., 0.])                                          # initial state (position, velocity, and acceleration)
+        self.kf.F = np.array([[1., dt, 0.5*(dt**2)], [0., 1., dt], [0., 0., 1]])    # state transition matrix
+        self.kf.H = np.array([[1., 0., 0.], [0., 0., 1.]])                          # Measurement function (baro)
+        self.kf.H2 = np.array([[0., 0., 1.]])                                       # Measurement function (accel)
+        self.kf.P *= 0.01                                                           # covariance matrix
+        self.kf.R = np.array([[0.5, 0.], [0., 0.2]])                                # state uncertainty (baro)
+        self.kf.R2 = np.array([[0.2]])                                              # state uncertainty (accel)
+        self.kf.Q = np.array([[0.02, 0., 0.], [0., 0.02, 0.], [0., 0., 0.02]])
+
+    @property
+    def brake_angle(self):
+        return self.brake_angles[-1]
+
+    @brake_angle.setter
+    def brake_angle(self, angle):
+        self.brake_angles.append(angle)
+
+    @property
+    def estimated_altitude(self):
+        return self.kalman_altitude_values[-1]
+
+    @estimated_altitude.setter
+    def estimated_altitude(self, alt):
+        self.kalman_altitude_values.append(alt)
+
+    @property
+    def estimated_velocity(self):
+        return self.kalman_velocity_values[-1]
+
+    @estimated_velocity.setter
+    def estimated_velocity(self, v):
+        self.kalman_velocity_values.append(v)
+
+    @property
+    def estimated_acceleration(self):
+        return self.kalman_acceleration_values[-1]
+
+    @estimated_acceleration.setter
+    def estimated_acceleration(self, a):
+        self.kalman_acceleration_values.append(a)
