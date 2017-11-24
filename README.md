@@ -13,12 +13,12 @@ This simulator allows for rapid testing and prototyping, but it does not contain
 * Models sensor delays and inaccuracies, and servo slew rate
 * Graphs simulation data with matplotlib
 * Includes post-flight analysis code that can create a function to estimate CdA given brake angle
-* Python2 and Python3 compatabile
+* Object-oriented and easily extendable
 
 ## How to get started
 * Clone the repo
 * Install [NumPy, SciPy, and Matplotlib](https://scipy.org/install.html) and their dependencies.
   * (Specifically, on Linux, you may have to install the package `python-tkinter` for Matplotlib to work)
-* Run the simulator with `python rocket_sim.py <thrust curve file>`
+* Run the apogee simulator with `python apogee_ctrl.py <thrust curve file>`
   * An example thrust curve, `AeroTech_F52.eng`, is included
 * For drag brake curve-fitting (`analysis.py`), input collected CdA values and corresponding drag brake angles, then run `python analysis.py`.
