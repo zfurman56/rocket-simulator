@@ -134,9 +134,9 @@ class Simulator(SimulatorState):
             self.time += SIM_TIME_INC
         self._print_results()
 
+    # should be overridden by subclass
     def _print_results(self):
-        print('Peak altitude (m):', max([x[1] for x in self.altitude_values]))
-        print('Flight time (sec):', max(self.time_values))
+        pass
 
     def _calculate_forces(self):
         # Add Engine thrust and pitch to forces
