@@ -1,4 +1,9 @@
-from my_kalman import kfilter
+# Adds parent package as a module; allows calling this module
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
+from simulator import Simulator
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -14,6 +19,9 @@ velocity_values = []
 kalman_velocity_values = []
 accel_values = []
 kalman_accel_values = []
+
+kfilter = Simulator().kf
+
 for i in range(160):
     for i2 in range(12):
 
@@ -24,7 +32,7 @@ for i in range(160):
 
         kfilter.predict()
         if i2 == 0:
-            kfilter.update(np.array([np.random.normal(position, 0.5), np.random.normal(accel, 0.2)]))
+            kfilter.update(np.array([np.random.normal(position, .5), np.random.normal(accel, 0.2)]))
         else:
             kfilter.update2(np.array([np.random.normal(accel, 0.2)]))
 
@@ -35,7 +43,6 @@ for i in range(160):
         kalman_velocity_values.append(kfilter.x[1]-velocity)
         accel_values.append(accel)
         kalman_accel_values.append(kfilter.x[2])
-
 
 plt.subplot(3, 1, 1)
 plt.plot(time_values, kalman_altitude_values)
