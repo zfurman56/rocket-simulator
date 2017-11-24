@@ -104,7 +104,11 @@ class ApogeeSimulator(KFSimulator):
         self._print_results()
 
     def _print_results(self):
-        print('Peak altitude (m):', max([x[1] for x in self.altitude_values]))
+        print('')
+        print('========== RESULTS ==========')
+        print('PEAK ALTITUDE::          {} meters'.format(max([x[1] for x in self.altitude_values])))
+        print('=============================')
+        print('')
 
     def _calculate_forces(self):
         # Add Engine thrust and attitude to forces
