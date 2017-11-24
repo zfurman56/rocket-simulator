@@ -9,8 +9,6 @@ drag estimation given brake angle.
 import numpy as np
 from matplotlib import pyplot as plt
 
-import compat
-
 
 def to_rad(angle):
     return angle * (np.pi / 180)
