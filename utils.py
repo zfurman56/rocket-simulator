@@ -7,7 +7,7 @@ from params import THRUST_SCALE
 def help():
     return \
            """Rocket Simulator for use in TARC 2018.
-           Usage: python rocket_sim.py eng_file
+           Usage: python apogee_ctrl.py eng_file
            """
 
 
