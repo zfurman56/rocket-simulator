@@ -63,7 +63,8 @@ class ApogeeSimulator(KFSimulator):
         """
         Accelerometer sensor model
         """
-        accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1]) - self.pitch) * np.linalg.norm(acceleration)
+        accel = acceleration - GRAVITY
+        accel_vector = np.cos(np.arctan2(accel[0], accel[1]) - self.pitch) * np.linalg.norm(accel)
         return np.random.normal(accel_vector, ACCEL_STD)
 
     def _altimeter_model(self, altitude):
@@ -93,9 +94,9 @@ class ApogeeSimulator(KFSimulator):
                 self.kf.predict()
                 if first:
                     # Barometer sensor inline
-                    self.kf.update(np.array([self._altimeter_model(, self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
+                    self.kf.update(np.array([self._altimeter_model(self.altitude), self._accelerometer_model(self.acceleration) + GRAVITY[1]]))
                 else:
-                    self.kf.update2(np.array([self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
+                    self.kf.update2(np.array([self._accelerometer_model(self.acceleration) + GRAVITY[1]]))
 
                 first = False
 
