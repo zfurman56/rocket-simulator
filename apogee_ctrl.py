@@ -127,6 +127,9 @@ class ApogeeSimulator(KFSimulator):
         forces += self._get_drag_factor(self.brake_angle) * -self.velocity**2 * np.sign(self.velocity)
         return forces
 
+    def _terminate(self):
+        return self.velocity[1] < 0
+
     def plot(self, title=None):
         # create PID graph
         self.pid.figure('Apogee PID Controller Error')
