@@ -66,6 +66,12 @@ class ApogeeSimulator(KFSimulator):
         accel_vector = np.cos(np.arctan2(acceleration[0], acceleration[1]) - self.pitch) * np.linalg.norm(acceleration)
         return np.random.normal(accel_vector, ACCEL_STD)
 
+    def _altimeter_model(self, altitude):
+        """
+        Barometric altimeter sensor model
+        """
+        return np.random.normal(altitude[1], BARO_STD)
+
     def simulate(self):
         while not self.terminated:
             # Runs PID controller and returns commanded drag brake angle.
@@ -87,7 +93,7 @@ class ApogeeSimulator(KFSimulator):
                 self.kf.predict()
                 if first:
                     # Barometer sensor inline
-                    self.kf.update(np.array([np.random.normal(self.altitude[1], BARO_STD), self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
+                    self.kf.update(np.array([self._altimeter_model(, self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
                 else:
                     self.kf.update2(np.array([self._accelerometer_model(self.acceleration - GRAVITY) + GRAVITY[1]]))
 
