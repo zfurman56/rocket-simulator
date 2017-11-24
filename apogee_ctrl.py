@@ -24,10 +24,20 @@ from params import (
 
 
 class ApogeeSimulator(KFSimulator):
+    brake_angles = [0.] # Servo angle values for drag brakes (rads)
+
     def __init__(self, engine):
         super(ApogeeSimulator, self).__init__()
         self._eng = engine
         self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
+
+    @property
+    def brake_angle(self):
+        return self.brake_angles[-1]
+
+    @brake_angle.setter
+    def brake_angle(self, angle):
+        self.brake_angles.append(angle)
 
     def _get_drag_factor(self, brake_angle):
         """Map from drag brake angle to drag factor

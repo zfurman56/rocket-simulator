@@ -172,7 +172,6 @@ class Simulator(SimulatorState):
 
 
 class KFSimulator(Simulator):
-    brake_angles = [0.] # Servo angle values for drag brakes (rads)
     kalman_altitude_values = [0.] # meters
     kalman_velocity_values = [0.] # meters/second
     kalman_acceleration_values = [0.] # meters/second^2
@@ -189,14 +188,6 @@ class KFSimulator(Simulator):
         self.kf.R = np.array([[0.5, 0.], [0., 0.2]])                                # state uncertainty (baro)
         self.kf.R2 = np.array([[0.2]])                                              # state uncertainty (accel)
         self.kf.Q = np.array([[0.02, 0., 0.], [0., 0.02, 0.], [0., 0., 0.02]])
-
-    @property
-    def brake_angle(self):
-        return self.brake_angles[-1]
-
-    @brake_angle.setter
-    def brake_angle(self, angle):
-        self.brake_angles.append(angle)
 
     @property
     def estimated_altitude(self):
