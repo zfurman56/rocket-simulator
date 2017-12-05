@@ -11,7 +11,7 @@ from params import GRAVITY, MASS, SIM_TIME_INC, DRAG_FACTOR, DRAG_GAIN, ROD_LEN
 from kalman.kf import KalmanFilter
 
 
-class SimulatorState(object): # MUST extend object for py2 compat
+class SimulatorState:
     time_values = [-5.] # seconds
     altitude_values = [np.array([0., 0.])] # meters
     # See https://spaceflightsystems.grc.nasa.gov/education/rocket/rotations.html
@@ -136,7 +136,7 @@ class Simulator(SimulatorState):
 
     # should be overridden by subclass
     def _print_results(self):
-        pass
+        raise NotImplementedError
 
     def _calculate_forces(self):
         # Add Engine thrust and pitch to forces
