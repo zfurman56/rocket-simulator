@@ -22,19 +22,6 @@ class SimulatorState:
     velocity_values = [np.array([0., 0.])] # meters/second
     acceleration_values = [np.array([0., 0.])] # meters/seconds^2
 
-    def print_init_values(self):
-        print('')
-        print('===== INIT PARAMETERS ======')
-        print('TIME::                   {} seconds'.format(self.time_values[0]))
-        print('ALTITUDE::               {} meters'.format(self.altitude_values[0]))
-        print('PITCH::                  {} radians'.format(self.pitch_values[0]))
-        print('YAW::                    {} radians'.format(self.yaw_values[0]))
-        print('ROLL::                   {} radians'.format(self.roll_values[0]))
-        print('VELOCITY::               {} m/s'.format(self.velocity_values[0]))
-        print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[0]))
-        print('============================')
-        print('')
-
     @property
     def time(self):
         return self.time_values[-1]
@@ -92,36 +79,52 @@ class SimulatorState:
         self.acceleration_values.append(a)
 
 
-class Simulator(SimulatorState):
+class Simulator:
     terminated = False
+
+    def __init__(self, state=None):
+        self.state = state or SimulatorState()
+
+    def print_init_values(self):
+        print('')
+        print('===== INIT PARAMETERS ======')
+        print('TIME::                   {} seconds'.format(self.state.time_values[0]))
+        print('ALTITUDE::               {} meters'.format(self.state.altitude_values[0]))
+        print('PITCH::                  {} radians'.format(self.state.pitch_values[0]))
+        print('YAW::                    {} radians'.format(self.state.yaw_values[0]))
+        print('ROLL::                   {} radians'.format(self.state.roll_values[0]))
+        print('VELOCITY::               {} m/s'.format(self.state.velocity_values[0]))
+        print('ACCELERATION::           {} m/s^2'.format(self.state.acceleration_values[0]))
+        print('============================')
+        print('')
 
     def print_final_values(self):
         assert self.terminated, 'The simulation has not terminated; cannot print final values.'
 
         print('')
         print('===== FINAL PARAMETERS ======')
-        print('TIME::                   {} seconds'.format(self.time_values[-1]))
-        print('ALTITUDE::               {} meters'.format(self.altitude_values[-1]))
-        print('PITCH::                  {} radians'.format(self.pitch_values[-1]))
-        print('YAW::                    {} radians'.format(self.yaw_values[-1]))
-        print('ROLL::                   {} radians'.format(self.roll_values[-1]))
-        print('VELOCITY::               {} m/s'.format(self.velocity_values[-1]))
-        print('ACCELERATION::           {} m/s^2'.format(self.acceleration_values[-1]))
+        print('TIME::                   {} seconds'.format(self.state.time_values[-1]))
+        print('ALTITUDE::               {} meters'.format(self.state.altitude_values[-1]))
+        print('PITCH::                  {} radians'.format(self.state.pitch_values[-1]))
+        print('YAW::                    {} radians'.format(self.state.yaw_values[-1]))
+        print('ROLL::                   {} radians'.format(self.state.roll_values[-1]))
+        print('VELOCITY::               {} m/s'.format(self.state.velocity_values[-1]))
+        print('ACCELERATION::           {} m/s^2'.format(self.state.acceleration_values[-1]))
         print('=============================')
         print('')
 
     def plot(self, title=None):
         plt.figure(title or 'Simulation Outcomes')
         plt.subplot(3, 1, 1)
-        plt.plot(self.time_values, [x[1] for x in self.altitude_values], label='Altitude')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.altitude_values], label='Altitude')
         plt.ylabel('Altitude (m)')
 
         plt.subplot(3, 1, 2)
-        plt.plot(self.time_values, [x[1] for x in self.velocity_values], label='Velocity')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.velocity_values], label='Velocity')
         plt.ylabel('Velocity (m/s)')
 
         plt.subplot(3, 1, 3)
-        plt.plot(self.time_values, [x[1] for x in self.acceleration_values], label='Acceleration')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.acceleration_values], label='Acceleration')
         plt.ylabel('Acceleration (m/s^2)')
         plt.xlabel('Time (s)')
 
@@ -131,7 +134,7 @@ class Simulator(SimulatorState):
         while not self.terminated:
             self.tick()
             # Increment the time
-            self.time += SIM_TIME_INC
+            self.state.time += SIM_TIME_INC
         self._print_results()
 
     # should be overridden by subclass
@@ -143,35 +146,35 @@ class Simulator(SimulatorState):
         # Gravitational force
         forces = MASS * GRAVITY
         # Air drag
-        forces += DRAG_FACTOR * (1 + DRAG_GAIN) * -self.velocity**2 * np.sign(self.velocity)
+        forces += DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
         return forces
 
     def _terminate(self):
-        return self.altitude[1] < 0
+        return self.state.altitude[1] < 0
 
     def tick(self):
         if self._terminate():
             self.terminated = True
 
-        if self.time < 0:
+        if self.state.time < 0:
             # Duplicates the value on a list, ensuring equal lengths
             # for plotting
-            self.altitude = self.altitude
-            self.acceleration = self.acceleration
-            self.velocity = self.velocity
+            self.state.altitude = self.state.altitude
+            self.state.acceleration = self.state.acceleration
+            self.state.velocity = self.state.velocity
             return
 
         # Calculate and set new acceleration, altitude, and velocity
-        self.acceleration = self._calculate_forces() / MASS
+        self.state.acceleration = self._calculate_forces() / MASS
         # Cannot use += due to property decorator
-        self.altitude = self.altitude + self.velocity * SIM_TIME_INC + 0.5 * self.acceleration * SIM_TIME_INC**2
-        self.velocity = self.velocity + self.acceleration * SIM_TIME_INC
+        self.state.altitude = self.state.altitude + self.state.velocity * SIM_TIME_INC + 0.5 * self.state.acceleration * SIM_TIME_INC**2
+        self.state.velocity = self.state.velocity + self.state.acceleration * SIM_TIME_INC
 
-        if np.linalg.norm(self.altitude) > ROD_LEN:
-            self.pitch = np.pi/2 - np.arctan2(self.velocity[1], self.velocity[0])
+        if np.linalg.norm(self.state.altitude) > ROD_LEN:
+            self.state.pitch = np.pi/2 - np.arctan2(self.state.velocity[1], self.state.velocity[0])
 
 
-class KFSimulator(Simulator):
+class KFState(SimulatorState):
     kalman_altitude_values = [0.] # meters
     kalman_velocity_values = [0.] # meters/second
     kalman_acceleration_values = [0.] # meters/second^2
