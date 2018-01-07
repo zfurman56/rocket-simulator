@@ -10,8 +10,6 @@ from pid import PIDController
 from utils import get_eng_file_from_argv
 from params import (
     GRAVITY,
-    BARO_STD,
-    ACCEL_STD,
     MAX_SERVO_SLEW_RATE,
     MASS,
     TARGET_APOGEE,
@@ -61,20 +59,6 @@ class ApogeeSimulator(Simulator):
         clamped_slew_rate = np.clip(slew_rate, -MAX_SERVO_SLEW_RATE, MAX_SERVO_SLEW_RATE)
         return np.clip((self.state.brake_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
 
-    def _accelerometer_model(self, acceleration):
-        """
-        Accelerometer sensor model
-        """
-        accel = acceleration - GRAVITY
-        accel_vector = np.cos(np.arctan2(accel[0], accel[1]) - self.state.pitch) * np.linalg.norm(accel)
-        return np.random.normal(accel_vector, ACCEL_STD)
-
-    def _altimeter_model(self, altitude):
-        """
-        Barometric altimeter sensor model
-        """
-        return np.random.normal(altitude[1], BARO_STD)
-
     def simulate(self):
         while not self.terminated:
             # Runs PID controller and returns commanded drag brake angle.
@@ -120,8 +104,8 @@ class ApogeeSimulator(Simulator):
         print('')
 
     def _calculate_forces(self):
-        # Add Engine thrust and attitude to forces
-        # Gravitational force
+        """Adds Engine thrust and attitude to net forces.
+        """
         forces = MASS * GRAVITY
         # Thrust and rotation
         forces += self._eng.thrust(self.state.time) * np.array([np.sin(self.state.pitch), np.cos(self.state.pitch)])

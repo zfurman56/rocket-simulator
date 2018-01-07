@@ -7,8 +7,17 @@ closed-loop PID controller.
 import numpy as np
 from matplotlib import pyplot as plt
 
-from params import GRAVITY, MASS, SIM_TIME_INC, DRAG_FACTOR, DRAG_GAIN, ROD_LEN
 from kalman.kf import KalmanFilter
+from params import (
+    GRAVITY,
+    BARO_STD,
+    ACCEL_STD,
+    MASS,
+    SIM_TIME_INC,
+    DRAG_FACTOR,
+    DRAG_GAIN,
+    ROD_LEN
+)
 
 
 class SimulatorState:
@@ -129,6 +138,20 @@ class Simulator:
         plt.xlabel('Time (s)')
 
         return plt
+
+    def _accelerometer_model(self, acceleration):
+        """
+        Accelerometer sensor model
+        """
+        accel = acceleration - GRAVITY
+        accel_vector = np.cos(np.arctan2(accel[0], accel[1]) - self.state.pitch) * np.linalg.norm(accel)
+        return np.random.normal(accel_vector, ACCEL_STD)
+
+    def _altimeter_model(self, altitude):
+        """
+        Barometric altimeter sensor model
+        """
+        return np.random.normal(altitude[1], BARO_STD)
 
     def simulate(self):
         while not self.terminated:
