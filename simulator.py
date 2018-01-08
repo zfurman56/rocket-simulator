@@ -169,7 +169,8 @@ class Simulator:
         # Gravitational force
         forces = MASS * GRAVITY
         # Air drag
-        forces += DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
+        # forces += DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
+        forces += DRAG_FACTOR * -self.state.velocity**2 * np.sign(self.state.velocity)
         return forces
 
     def _terminate(self):

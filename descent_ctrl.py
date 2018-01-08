@@ -54,8 +54,8 @@ class DescentSimulator(Simulator):
 
     def simulate(self):
         while not self.terminated:
-            # Deploy chute after reaching terminal velocity (example)
-            if self.state.acceleration[1] > -0.25: self.state.chute_deployed = True
+            # Deploy chute after 3 seconds (example)
+            if self.state.time > self.state.time_values[0] + 3: self.state.chute_deployed = True
 
             # TODO rewrite this portion; slight messy.
             # Prevents floating point errors because SIM_TIME_INC is small.
@@ -87,7 +87,8 @@ class DescentSimulator(Simulator):
         if not self.state.chute_deployed:
             return super(DescentSimulator, self)._calculate_forces()
         forces = MASS * GRAVITY
-        forces += CHUTE_DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
+        # forces += CHUTE_DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
+        forces += CHUTE_DRAG_FACTOR * -self.state.velocity**2 * np.sign(self.state.velocity)
         return forces
 
     def _print_results(self):
