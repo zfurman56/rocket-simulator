@@ -18,21 +18,21 @@ from params import (
     SIM_TIME_INC,
     CMD_PERIOD,
     KP, KI, KD,
-    DRAG_FACTOR,
+    CHUTE_DRAG_FACTOR,
     DRAG_GAIN,
 )
 
 
 class DescentSimulator(Simulator):
-
     class DescentState(KFState):
         def __init__(self, apogee=None):
             '''Assumes velocity and acceleration are
             0m/s and 9.8m/s^2 (gravity) respectively.
             '''
+            self.chute_deployed = False
             # Phys
             super(DescentSimulator.DescentState, self).__init__()
-            self.altitude_values = [apogee or np.array([0., 244.])] # TARC Target Altitude (meters)
+            self.altitude_values = [apogee or np.array([0., TARGET_APOGEE])] # m
             self.acceleration_values = [GRAVITY] # m/s^2
             self.time_values = [5.] # seconds
 
@@ -54,6 +54,9 @@ class DescentSimulator(Simulator):
 
     def simulate(self):
         while not self.terminated:
+            # Deploy chute after reaching terminal velocity (example)
+            if self.state.acceleration[1] > -0.25: self.state.chute_deployed = True
+
             # TODO rewrite this portion; slight messy.
             # Prevents floating point errors because SIM_TIME_INC is small.
             sim_time_end = self.state.time + CMD_PERIOD - SIM_TIME_INC/2
@@ -78,6 +81,14 @@ class DescentSimulator(Simulator):
                 self.state.time += SIM_TIME_INC
 
         self._print_results()
+
+    def _calculate_forces(self):
+        # Assumes drag brakes are not in use
+        if not self.state.chute_deployed:
+            return super(DescentSimulator, self)._calculate_forces()
+        forces = MASS * GRAVITY
+        forces += CHUTE_DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
+        return forces
 
     def _print_results(self):
         print('')
