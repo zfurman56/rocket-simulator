@@ -39,6 +39,8 @@ KD = 0.0
 
 # Drag factor for rocket
 # 0.5 * Cd  * A * rho
+# To simulate, solve for Cd*A*rho using the terminal velocity equation
+# and multiply by 0.5
 DRAG_FACTOR = 0.00185
 
 DRAG_GAIN = 10
@@ -49,15 +51,16 @@ THRUST_SCALE = 1.0
 # Helps with rocket rotation
 ROD_LEN = 0
 
-# apex vent and canopy radius
-# See http://designintheclassroom.com/images/parachuteTutorial/basic.gif
-# for diagram
-CHUTE_APEX_VENT_RAD = 0.03 # m
-CHUTE_CANOPY_RAD = 0.08 # m
+# Chute terminal velocity
+CHUTE_TERM_VEL = 5. # m/s
 
-# Chute drag factor
-CHUTE_DRAG_FACTOR = (0.5 *
-                     1.2041 * # rho @ 1atm and 20C - https://en.wikipedia.org/wiki/Density_of_air
-                     1.75 * # typical Cd - see https://www.grc.nasa.gov/WWW/k-12/VirtualAero/BottleRocket/airplane/rktvrecv.html
-                     (np.pi * CHUTE_CANOPY_RAD**2 - np.pi * CHUTE_APEX_VENT_RAD**2) # Cross sectional area of chute
-                    )
+# Chute drag factor, using derived terminal velocity
+CHUTE_DRAG_FACTOR = (MASS * -GRAVITY[1]) / CHUTE_TERM_VEL**2
+
+# CHUTE_APEX_VENT_RAD = 0.03 # m
+# CHUTE_CANOPY_RAD = 0.08 # m
+# EST_CHUTE_DRAG_FACTOR = (0.5 *
+#                      1.2041 * # rho @ 1atm and 20C - https://en.wikipedia.org/wiki/Density_of_air
+#                      1.75 * # typical Cd - see https://www.grc.nasa.gov/WWW/k-12/VirtualAero/BottleRocket/airplane/rktvrecv.html
+#                      (np.pi * CHUTE_CANOPY_RAD**2 - np.pi * CHUTE_APEX_VENT_RAD**2) # Cross sectional area of chute
+#                     )
