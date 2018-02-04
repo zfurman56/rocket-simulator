@@ -64,3 +64,10 @@ CHUTE_DRAG_FACTOR = (MASS * -GRAVITY[1]) / CHUTE_TERM_VEL**2
 #                      1.75 * # typical Cd - see https://www.grc.nasa.gov/WWW/k-12/VirtualAero/BottleRocket/airplane/rktvrecv.html
 #                      (np.pi * CHUTE_CANOPY_RAD**2 - np.pi * CHUTE_APEX_VENT_RAD**2) # Cross sectional area of chute
 #                     )
+
+# The flight duration goal is a range of 41 to 43 seconds.
+# Assume 42 seconds with a std of 1 sec.
+TARGET_DURATION = 42 # sec
+
+# The string length released during descent control
+DESCENT_STR_LEN = 0.5 # m

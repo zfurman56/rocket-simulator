@@ -20,6 +20,10 @@ from params import (
     KP, KI, KD,
     CHUTE_DRAG_FACTOR,
     DRAG_GAIN,
+    ROD_LEN,
+    TARGET_DURATION,
+    CHUTE_TERM_VEL,
+    DESCENT_STR_LEN
 )
 
 
@@ -30,32 +34,61 @@ class DescentSimulator(Simulator):
             0m/s and 9.8m/s^2 (gravity) respectively.
             '''
             self.chute_deployed = False
-            # Phys
+            self.pin_pulled = False
             super(DescentSimulator.DescentState, self).__init__()
-            self.altitude_values = [apogee or np.array([0., TARGET_APOGEE])] # m
-            self.acceleration_values = [GRAVITY] # m/s^2
-            self.time_values = [5.] # seconds
 
             # kalman filter
             self.kf.x = [244., # altitude - meters
                          0., # velocity - m/s
                          GRAVITY[1]] # acceleration - m/s^2
 
+            # Rocket init data
+            self.altitude_values = [apogee or np.array([0., TARGET_APOGEE])] # meters
+            self.acceleration_values = [GRAVITY] # m/s^2
+            self.time_values = [6.3] # seconds
+            # Chute init data
+            self.chute_altitude_values = [apogee or np.array([0., TARGET_APOGEE])] # meters
+            self.chute_velocity_values = [np.array([0., 0.])] # meters/second
+            self.chute_acceleration_values = [GRAVITY] # meters/seconds^2
+
+        @property
+        def chute_altitude(self):
+            return self.chute_altitude_values[-1]
+
+        @chute_altitude.setter
+        def chute_altitude(self, alt):
+            self.chute_altitude_values.append(alt)
+
+        @property
+        def chute_velocity(self):
+            return self.chute_velocity_values[-1]
+
+        @chute_velocity.setter
+        def chute_velocity(self, v):
+            self.chute_velocity_values.append(v)
+
+        @property
+        def chute_acceleration(self):
+            return self.chute_acceleration_values[-1]
+
+        @chute_acceleration.setter
+        def chute_acceleration(self, a):
+            self.chute_acceleration_values.append(a)
+
+
     def __init__(self, state=None):
         super(DescentSimulator, self).__init__(state or DescentSimulator.DescentState())
         assert isinstance(self.state, KFState), 'State must be of type `KFState` or subclass for descent control simulation.'
         self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
 
-    # def _actuate(self, commanded_brake_angle):
-    #     commanded_brake_rate = commanded_brake_angle - self.state.brake_angle
-    #     slew_rate = commanded_brake_rate / CMD_PERIOD
-    #     clamped_slew_rate = np.clip(slew_rate, -MAX_SERVO_SLEW_RATE, MAX_SERVO_SLEW_RATE)
-    #     return np.clip((self.state.brake_angle + (clamped_slew_rate * CMD_PERIOD)), 0, (np.pi/2))
-
     def simulate(self):
         while not self.terminated:
-            # Deploy chute after 3 seconds (example)
-            if self.state.time > self.state.time_values[0] + 3: self.state.chute_deployed = True
+            if self.state.altitude[1] / CHUTE_TERM_VEL < TARGET_DURATION - self.state.time:
+                self.state.chute_deployed = True
+
+            # Deploys only when in range of 15m to 10m above ground
+            if self.state.chute_deployed and (15. > self.state.altitude[1] > 10.) and (self.state.altitude[1] - DESCENT_STR_LEN) / CHUTE_TERM_VEL > TARGET_DURATION - self.state.time:
+                self.state.pin_pulled = True
 
             # TODO rewrite this portion; slight messy.
             # Prevents floating point errors because SIM_TIME_INC is small.
@@ -82,13 +115,47 @@ class DescentSimulator(Simulator):
 
         self._print_results()
 
+    def tick(self):
+        if self._terminate():
+            self.terminated = True
+
+        if self.state.time < 0:
+            # Duplicates the value on a list, ensuring equal lengths
+            # for plotting
+            self.state.altitude = self.state.altitude
+            self.state.acceleration = self.state.acceleration
+            self.state.velocity = self.state.velocity
+
+            self.state.chute_altitude = self.state.chute_altitude
+            self.state.chute_acceleration = self.state.chute_acceleration
+            self.state.chute_velocity = self.state.chute_velocity
+            return
+
+        # Calculate and set new acceleration, altitude, and velocity
+        self.state.acceleration = self._calculate_forces() / MASS
+        self.state.chute_acceleration = self._calculate_chute_forces() / MASS
+        # Cannot use += due to property decorator
+        self.state.altitude = self.state.altitude + self.state.velocity * SIM_TIME_INC + 0.5 * self.state.acceleration * SIM_TIME_INC**2
+        self.state.velocity = self.state.velocity + self.state.acceleration * SIM_TIME_INC
+        self.state.chute_altitude = self.state.chute_altitude + self.state.chute_velocity * SIM_TIME_INC + 0.5 * self.state.chute_acceleration * SIM_TIME_INC**2
+        self.state.chute_velocity = self.state.chute_velocity + self.state.chute_acceleration * SIM_TIME_INC
+
+        if np.linalg.norm(self.state.altitude) > ROD_LEN:
+            self.state.pitch = np.pi/2 - np.arctan2(self.state.velocity[1], self.state.velocity[0])
+
     def _calculate_forces(self):
         # Assumes drag brakes are not in use
+        if not self.state.chute_deployed or (self.state.pin_pulled and self.state.altitude[1] + DESCENT_STR_LEN > self.state.chute_altitude[1]):
+            return super(DescentSimulator, self)._calculate_forces()
+        forces = MASS * GRAVITY
+        forces += CHUTE_DRAG_FACTOR * -self.state.velocity**2 * np.sign(self.state.velocity)
+        return forces
+
+    def _calculate_chute_forces(self):
         if not self.state.chute_deployed:
             return super(DescentSimulator, self)._calculate_forces()
         forces = MASS * GRAVITY
-        # forces += CHUTE_DRAG_FACTOR * (1 + DRAG_GAIN) * -self.state.velocity**2 * np.sign(self.state.velocity)
-        forces += CHUTE_DRAG_FACTOR * -self.state.velocity**2 * np.sign(self.state.velocity)
+        forces += CHUTE_DRAG_FACTOR * -self.state.chute_velocity**2 * np.sign(self.state.chute_velocity)
         return forces
 
     def _print_results(self):
@@ -107,18 +174,21 @@ class DescentSimulator(Simulator):
         plt.figure(title or 'Simulation Outcomes')
         plt.subplot(4, 1, 1)
         plt.plot(self.state.time_values, [x[1] for x in self.state.altitude_values], label='Altitude')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.chute_altitude_values], label='Chute Altitude')
         plt.plot(self.state.time_values, self.state.kalman_altitude_values, label=kf_label)
         plt.ylabel('Altitude (m)')
         plt.legend()
 
         plt.subplot(4, 1, 2)
         plt.plot(self.state.time_values, [x[1] for x in self.state.velocity_values], label='Velocity')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.chute_velocity_values], label='Chute Velocity')
         plt.plot(self.state.time_values, self.state.kalman_velocity_values, label=kf_label)
         plt.ylabel('Velocity (m/s)')
         plt.legend()
 
         plt.subplot(4, 1, 3)
         plt.plot(self.state.time_values, [x[1] for x in self.state.acceleration_values], label='Acceleration')
+        plt.plot(self.state.time_values, [x[1] for x in self.state.chute_acceleration_values], label='Chute Acceleration')
         plt.plot(self.state.time_values, self.state.kalman_acceleration_values, label=kf_label)
         plt.ylabel('Acceleration (m/s^2)')
         plt.legend()
