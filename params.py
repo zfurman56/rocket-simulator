@@ -22,7 +22,7 @@ MAX_SERVO_SLEW_RATE = np.pi * 2 # rad/second
 # Mass of the rocket. Used to calculate forces.
 MASS = 0.625 # kilograms
 
-TARGET_APOGEE = 236 # meters
+TARGET_APOGEE = 260.91 # meters
 
 # How much time passes between each tick
 SIM_TIME_INC = 0.00416666666 # seconds

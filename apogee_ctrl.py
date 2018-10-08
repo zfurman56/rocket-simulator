@@ -99,7 +99,8 @@ class ApogeeSimulator(Simulator):
     def _print_results(self):
         print('')
         print('========== RESULTS ==========')
-        print('PEAK ALTITUDE::          {} meters'.format(max([x[1] for x in self.state.altitude_values])))
+        print('APOGEE::          {} meters'.format(max([x[1] for x in self.state.altitude_values])))
+        print('TARGET APOGEE::   {} meters'.format(TARGET_APOGEE))
         print('=============================')
         print('')
 
@@ -149,7 +150,7 @@ class ApogeeSimulator(Simulator):
         return plt
 
 if __name__ == '__main__':
-    sim = ApogeeSimulator(get_eng_file_from_argv())
+    sim = ApogeeSimulator(get_eng_file_from_argv(__file__))
     sim.print_init_values()
     sim.simulate()
     sim.print_final_values()

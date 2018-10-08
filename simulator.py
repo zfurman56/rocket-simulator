@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from kalman.kf import KalmanFilter
+from utils import help
 from params import (
     GRAVITY,
     BARO_STD,
@@ -239,3 +240,6 @@ class KFState(SimulatorState):
     @estimated_acceleration.setter
     def estimated_acceleration(self, a):
         self.kalman_acceleration_values.append(a)
+
+if __name__ == '__main__':
+    print('Incorrect init file, use apogee_ctrl.py or descent ctrl.py!\n\n{}'.format(help('apogee_ctrl.py or descent_ctrl.py')))

@@ -34,7 +34,7 @@ class DescentSimulator(Simulator):
             super(DescentSimulator.DescentState, self).__init__()
             self.altitude_values = [apogee or np.array([0., TARGET_APOGEE])] # m
             self.acceleration_values = [GRAVITY] # m/s^2
-            self.time_values = [5.] # seconds
+            self.time_values = [6.3] # seconds
 
             # kalman filter
             self.kf.x = [244., # altitude - meters
@@ -45,6 +45,7 @@ class DescentSimulator(Simulator):
         super(DescentSimulator, self).__init__(state or DescentSimulator.DescentState())
         assert isinstance(self.state, KFState), 'State must be of type `KFState` or subclass for descent control simulation.'
         self.pid = PIDController(TARGET_APOGEE, KP, KI, KD)
+
 
     # def _actuate(self, commanded_brake_angle):
     #     commanded_brake_rate = commanded_brake_angle - self.state.brake_angle
@@ -95,6 +96,7 @@ class DescentSimulator(Simulator):
         print('')
         print('========== RESULTS ==========')
         print('TIME::                   {} seconds'.format(max(self.state.time_values)))
+        print('TARGET TIME::            44.5 ± 1.5 seconds')
         print('=============================')
         print('')
 
